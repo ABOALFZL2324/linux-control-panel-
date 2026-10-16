@@ -1,0 +1,314 @@
+/* ==========================================================================
+   ServDock Lightweight High-Performance UI
+   Clean, Fast, Responsive Workstation (No Heavy Blur/Animations)
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --font-sans: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  
+  /* Color Palette */
+  --bg-app: #06080e;
+  --bg-sidebar: #0a0e17;
+  --bg-header: #0a0e17;
+  --bg-surface: #0e1524;
+  --bg-surface-elevated: #151f33;
+  --bg-surface-hover: #1e293b;
+  
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.15);
+  --border-active: #3b82f6;
+  
+  --primary: #2563eb;
+  --accent-cyan: #06b6d4;
+  --accent-emerald: #10b981;
+  --accent-amber: #f59e0b;
+  --accent-rose: #f43f5e;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  user-select: none;
+}
+
+code, kbd, samp, pre, .font-mono {
+  font-family: var(--font-mono) !important;
+  direction: ltr;
+}
+
+body {
+  background-color: var(--bg-app);
+  color: #f8fafc;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* Fast Lightweight Surfaces (Zero Blur) */
+.glass-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.glass-panel:hover {
+  border-color: var(--border-medium);
+}
+
+.glass-card-interactive {
+  cursor: pointer;
+}
+.glass-card-interactive:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+/* Buttons System */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  outline: none;
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.btn-primary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.btn-secondary {
+  background: #1e293b;
+  border-color: var(--border-medium);
+  color: #e2e8f0;
+}
+.btn-secondary:hover:not(:disabled) {
+  background: #334155;
+  color: #ffffff;
+}
+
+.btn-outline {
+  background: transparent;
+  border-color: var(--border-medium);
+  color: #94a3b8;
+}
+.btn-outline:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.btn-danger {
+  background: rgba(244, 63, 94, 0.2);
+  border-color: rgba(244, 63, 94, 0.4);
+  color: #fda4af;
+}
+.btn-danger:hover:not(:disabled) {
+  background: rgba(244, 63, 94, 0.35);
+  color: #ffffff;
+}
+
+.btn-success {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+}
+.btn-success:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.35);
+  color: #ffffff;
+}
+
+/* Sidebar Nav Items */
+.nav-section-title {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  padding: 10px 14px 4px;
+}
+
+.nav-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  position: relative;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  text-align: right;
+}
+
+.nav-item:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.nav-item.active {
+  color: #ffffff;
+  background: #2563eb;
+}
+
+/* Status Dot */
+.status-beacon {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.status-beacon.online {
+  background-color: #10b981;
+}
+
+.status-beacon.offline {
+  background-color: #f43f5e;
+}
+
+.status-beacon.warning {
+  background-color: #f59e0b;
+}
+
+/* Progress track */
+.progress-track {
+  background: #1e293b;
+  border-radius: 4px;
+  overflow: hidden;
+  height: 7px;
+  position: relative;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+}
+
+/* Toast Notifications */
+#toast-container {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+.toast-item {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-radius: 10px;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 12.5px;
+  max-width: 420px;
+}
+.toast-item.toast-success { border-color: rgba(16, 185, 129, 0.6); }
+.toast-item.toast-error { border-color: rgba(244, 63, 94, 0.6); }
+.toast-item.toast-info { border-color: rgba(59, 130, 246, 0.6); }
+
+/* Code Terminals */
+.log-terminal {
+  background: #03060d;
+  color: #cbd5e1;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.65;
+  padding: 16px;
+  border-radius: 10px;
+  overflow-y: auto;
+  user-select: text;
+  white-space: pre-wrap;
+  word-break: break-all;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Modal Backdrops (Fast display toggle, no heavy blur) */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 7, 18, 0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-overlay.active {
+  display: flex;
+}
+.modal-dialog {
+  max-height: 90vh;
+}
+
+/* Clickable Port Pill */
+.port-link-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2.5px 8px;
+  border-radius: 6px;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #93c5fd;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+}
+.port-link-badge:hover {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+/* File Manager Table Hover */
+.file-row:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}

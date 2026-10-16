@@ -1,0 +1,24 @@
+[Unit]
+Description=ServDock Lightweight Linux Agent
+After=network.target docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/servdock
+ExecStart=/usr/bin/python3 /opt/servdock/servdock_agent.py 9786
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# --- Systemd Security & Hardening Directives ---
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+ProtectKernelModules=true
+RestrictRealtime=true
+
+[Install]
+WantedBy=multi-user.target

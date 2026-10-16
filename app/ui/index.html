@@ -1,0 +1,2463 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ServDock - کنترل‌پنل پیشرفته لینوکس و ورک‌استیشن</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-[#06080e] text-slate-100 flex h-screen select-none overflow-hidden">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="w-64 bg-[#0a0e17] border-l border-white/5 flex flex-col justify-between z-20 shrink-0">
+    <div class="flex flex-col h-full overflow-hidden">
+      
+      <!-- Brand Header -->
+      <div class="p-4 border-b border-white/5 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center border border-white/10">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="font-bold text-[15px] tracking-wide text-white flex items-center gap-1.5">
+              ServDock
+              <span class="text-[9px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded font-mono border border-blue-500/30">Lite</span>
+            </h1>
+            <p class="text-[10.5px] text-slate-400 font-medium">Remote Workstation</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Organized Navigation Menu -->
+      <nav class="p-2.5 space-y-1 overflow-y-auto flex-1 text-xs">
+        
+        <div class="nav-section-title">منو و ابزارهای اصلی</div>
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item active">
+          <svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+          </svg>
+          داشبورد وضعیت
+        </button>
+
+        <button onclick="switchTab('containers')" id="nav-containers" class="nav-item">
+          <svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+          </svg>
+          مدیریت داکر
+          <span id="badge-running-count" class="mr-auto text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">0</span>
+        </button>
+
+        <button onclick="switchTab('files')" id="nav-files" class="nav-item">
+          <svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+          </svg>
+          مدیر فایل (File Manager)
+        </button>
+
+        <button onclick="switchTab('terminal')" id="nav-terminal" class="nav-item">
+          <svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          ترمینال لینوکس (SSH)
+        </button>
+
+        <button onclick="switchTab('rdp')" id="nav-rdp" class="nav-item">
+          <svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+          </svg>
+          ریموت دسکتاپ (RDP)
+        </button>
+
+        <button onclick="switchTab('power')" id="nav-power" class="nav-item">
+          <svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          کنترل پاور (Power)
+        </button>
+
+        <button onclick="switchTab('webserver')" id="nav-webserver" class="nav-item">
+          <svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
+          </svg>
+          وب‌سرور و دیتابیس (LAMP)
+          <span id="badge-web-status" class="mr-auto w-2 h-2 rounded-full bg-slate-600"></span>
+        </button>
+
+        <div class="nav-section-title mt-3">تنظیمات و شبکه</div>
+        <button onclick="switchTab('tailscale')" id="nav-tailscale" class="nav-item">
+          <svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+          </svg>
+          شبکه تایل‌اسکیل (Tailscale)
+          <span id="badge-tailscale-status" class="mr-auto w-2 h-2 rounded-full bg-slate-600"></span>
+        </button>
+
+        <button onclick="switchTab('servers')" id="nav-servers" class="nav-item">
+          <svg class="w-4 h-4 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path>
+          </svg>
+          مدیریت سرورها
+          <span id="badge-total-servers" class="mr-auto text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">0</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Bottom Sidebar Status Card -->
+    <div class="p-3 border-t border-white/5 bg-[#0a0e17] shrink-0">
+      <div class="flex items-center justify-between text-xs mb-1.5">
+        <span class="text-slate-400 text-[11px]">وضعیت سرور:</span>
+        <span id="sidebar-conn-status" class="flex items-center gap-1.5 font-semibold text-xs text-rose-400">
+          <span class="status-beacon offline"></span> آفلاین
+        </span>
+      </div>
+      <div id="sidebar-server-name" class="text-xs font-mono truncate text-slate-200 font-bold">هیچ سروری متصل نیست</div>
+      
+      <div class="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between text-[11px]">
+        <span class="text-slate-400">ایجنت ServDock:</span>
+        <span id="agent-mini-status" class="text-slate-500 font-mono">غیرفعال</span>
+      </div>
+      <div id="sidebar-latency-row" class="hidden mt-1.5 flex items-center justify-between text-[11px]">
+        <span class="text-slate-400">تاخیر شبکه (Ping):</span>
+        <span id="sidebar-latency-val" class="text-emerald-400 font-mono font-bold">-- ms</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN VIEWPORT ================= -->
+  <main class="flex-1 flex flex-col overflow-hidden bg-transparent relative z-10">
+    
+    <!-- TOP NAVIGATION & SERVER HUB -->
+    <header class="h-16 bg-[#0a0e17] border-b border-white/5 px-6 flex items-center justify-between z-10 shrink-0">
+      
+      <!-- Left: Server Selector & Actions Hub -->
+      <div class="flex items-center gap-2.5">
+        <div class="flex items-center gap-2 bg-slate-800/80 border border-white/10 rounded-xl px-2.5 py-1.5 shadow-inner">
+          <span class="status-beacon online !w-2 !h-2 ml-1" id="top-server-beacon" style="display: none;"></span>
+          <select id="server-select" onchange="onServerSelectChanged()" class="bg-transparent text-slate-100 text-xs outline-none font-mono cursor-pointer pr-1">
+            <option value="">-- انتخاب سرور هدف --</option>
+          </select>
+        </div>
+
+        <button onclick="editCurrentSelectedServer()" id="btn-quick-edit-server" class="p-2 rounded-xl bg-slate-800/60 border border-white/10 hover:bg-slate-700/80 text-slate-300 hover:text-white transition" title="ویرایش مشخصات این سرور">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+        </button>
+
+        <button onclick="deleteCurrentSelectedServer()" id="btn-quick-delete-server" class="p-2 rounded-xl bg-slate-800/60 border border-white/10 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition" title="حذف این سرور">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        </button>
+
+        <button onclick="openAddServerModal()" class="btn btn-secondary text-xs px-3 py-1.5" title="افزودن سرور جدید">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          سرور جدید
+        </button>
+
+        <div class="h-5 w-px bg-white/10 mx-1"></div>
+
+        <button id="btn-connect-toggle" onclick="toggleConnectServer()" class="btn btn-primary text-xs px-4 py-1.5 shadow-md">
+          <span id="btn-connect-text">اتصال SSH</span>
+        </button>
+      </div>
+
+      <!-- Center: Status Pill -->
+      <div class="flex items-center gap-3">
+        <div id="agent-header-pill" class="hidden items-center gap-2 px-3 py-1 rounded-full text-xs border font-medium bg-amber-500/10 text-amber-400 border-amber-500/20">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+          <span>حالت مستقیم SSH (بدون ایجنت)</span>
+          <button onclick="promptInstallAgent()" class="text-xs bg-amber-500/20 hover:bg-amber-500/30 px-2 py-0.5 rounded text-amber-200 mr-1 border border-amber-500/30 font-sans">
+            ⚡ نصب ایجنت
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: Auto-Refresh & Tools -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 text-xs text-slate-400 bg-slate-800/40 border border-white/5 rounded-xl px-2.5 py-1">
+          <input type="checkbox" id="chk-auto-refresh" checked onchange="toggleAutoRefresh()" class="rounded bg-slate-800 border-slate-700 text-blue-600 focus:ring-0 cursor-pointer">
+          <label for="chk-auto-refresh" class="cursor-pointer text-[11px]">رفرش زنده (4s)</label>
+        </div>
+
+        <button onclick="fetchDashboardData(true)" id="btn-manual-refresh" class="btn btn-secondary text-xs p-2" title="بروزرسانی دستی">
+          <svg id="refresh-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- CONTENT BODY (SCROLLABLE) -->
+    <div class="flex-1 overflow-y-auto p-6" id="main-content-scroll">
+
+      <!-- ================= TAB 1: DASHBOARD ================= -->
+      <section id="tab-dashboard" class="space-y-6">
+
+        <div id="banner-disconnected" class="glass-panel p-12 text-center flex flex-col items-center justify-center space-y-4 border-dashed border-white/10">
+          <div class="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center shadow-inner border border-blue-500/20">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          </div>
+          <div>
+            <h2 class="text-xl font-extrabold text-white mb-1.5">سرور لینوکسی خود را متصل کنید</h2>
+            <p class="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">برای مانیتورینگ زنده سخت‌افزار، مدیریت کانتینرهای داکر، فایل‌منیجر و کنترل پاور، سرور را متصل نمایید.</p>
+          </div>
+          <div class="flex items-center gap-3 pt-2">
+            <button onclick="openAddServerModal()" class="btn btn-primary px-5 py-2.5 text-xs shadow-lg shadow-blue-500/30">
+              + افزودن سرور جدید
+            </button>
+            <button onclick="switchTab('servers')" class="btn btn-secondary px-5 py-2.5 text-xs">
+              لیست سرورهای ثبت‌شده
+            </button>
+          </div>
+        </div>
+
+        <div id="dashboard-active-content" class="hidden space-y-6">
+          
+          <div id="agent-install-banner" class="hidden glass-panel p-4 border-amber-500/30 bg-gradient-to-r from-amber-950/25 to-slate-900/90 flex items-center justify-between">
+            <div class="flex items-center gap-3.5">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              </div>
+              <div>
+                <h4 class="text-sm font-bold text-amber-300">نصب ایجنت ServDock برای عملکرد فوق‌سریع</h4>
+                <p class="text-xs text-slate-400">ایجنت به عنوان یک سرویس پس‌زمینه امن آمار سیستم و داکر را بدون تاخیر برای شما مانیتور می‌کند.</p>
+              </div>
+            </div>
+            <button onclick="promptInstallAgent()" class="btn btn-primary text-xs px-4 py-2 shrink-0 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold border-none">
+              ⚡ نصب خودکار با ۱ کلیک
+            </button>
+          </div>
+
+          <!-- TOP METRICS (4 CARDS) -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <div class="glass-panel p-4 flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-slate-400">پردازنده (CPU)</span>
+                <span id="metric-cpu-cores" class="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-mono border border-blue-500/20">1 Core</span>
+              </div>
+              <div class="flex items-baseline justify-between my-2">
+                <span id="metric-cpu-percent" class="text-3xl font-extrabold text-white font-mono tracking-tight">0%</span>
+                <span id="metric-cpu-model" class="text-[11px] text-slate-400 truncate max-w-[130px]" title="">CPU Info</span>
+              </div>
+              <div class="progress-track mt-2">
+                <div id="prog-cpu" class="progress-fill bg-blue-500" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <div class="glass-panel p-4 flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-slate-400">حافظه رم (RAM)</span>
+                <span id="metric-ram-used-total" class="text-[10px] text-slate-400 font-mono">0 / 0 GB</span>
+              </div>
+              <div class="flex items-baseline justify-between my-2">
+                <span id="metric-ram-percent" class="text-3xl font-extrabold text-cyan-400 font-mono tracking-tight">0%</span>
+                <span id="metric-ram-free" class="text-[11px] text-slate-400 font-mono">0 MB آزاد</span>
+              </div>
+              <div class="progress-track mt-2">
+                <div id="prog-ram" class="progress-fill bg-cyan-400" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <div class="glass-panel p-4 flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-slate-400">فضای دیسک (Root /)</span>
+                <span id="metric-disk-used-total" class="text-[10px] text-slate-400 font-mono">0 / 0 GB</span>
+              </div>
+              <div class="flex items-baseline justify-between my-2">
+                <span id="metric-disk-percent" class="text-3xl font-extrabold text-emerald-400 font-mono tracking-tight">0%</span>
+                <span id="metric-disk-free" class="text-[11px] text-slate-400 font-mono">0 GB باقی‌مانده</span>
+              </div>
+              <div class="progress-track mt-2">
+                <div id="prog-disk" class="progress-fill bg-emerald-400" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <div class="glass-panel p-4 flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-slate-400">مشخصات سرور</span>
+                <span id="metric-host-uptime" class="text-[10px] text-amber-400 font-mono bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">Uptime: 0m</span>
+              </div>
+              <div class="space-y-1 my-1">
+                <div class="text-sm font-bold text-white truncate flex items-center gap-1.5" id="metric-host-os">
+                  <span>Linux</span>
+                </div>
+                <div class="text-xs text-slate-400 font-mono truncate" id="metric-host-kernel">Kernel: -</div>
+                <div class="text-[11px] text-slate-400 font-mono" id="metric-host-load">Load: 0.0, 0.0, 0.0</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DOCKER OVERVIEW SECTION -->
+          <div class="glass-panel p-5">
+            <div class="flex flex-wrap items-center justify-between pb-4 border-b border-white/5 gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center shadow-inner">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                </div>
+                <div>
+                  <h3 class="font-bold text-base text-white flex items-center gap-2">
+                    موتور داکر (Docker Engine)
+                    <span id="badge-docker-status" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">در حال بررسی...</span>
+                  </h3>
+                  <p class="text-xs text-slate-400">وضعیت کانتینرها، پورت‌های متصل و عملیات کنترل</p>
+                </div>
+              </div>
+
+              <!-- Interactive Filter Pills -->
+              <div class="flex items-center gap-2 font-mono text-xs">
+                <div onclick="switchTab('containers'); setContainerFilter('all');" class="px-3 py-1.5 rounded-xl bg-slate-800/80 border border-white/5 flex items-center gap-1.5 cursor-pointer hover:bg-slate-700/80 transition" title="مشاهده همه کانتینرها">
+                  <span class="text-slate-400">کل:</span>
+                  <span id="stat-total-containers" class="text-white font-bold">0</span>
+                </div>
+                <div onclick="switchTab('containers'); setContainerFilter('running');" class="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center gap-1.5 cursor-pointer hover:bg-emerald-500/20 transition" title="فیلتر کانتینرهای در حال اجرا">
+                  <span class="status-beacon online !w-1.5 !h-1.5"></span>
+                  <span>اجرا:</span>
+                  <span id="stat-running-containers" class="font-bold">0</span>
+                </div>
+                <div onclick="switchTab('containers'); setContainerFilter('stopped');" class="px-3 py-1.5 rounded-xl bg-slate-800/80 border border-white/5 flex items-center gap-1.5 cursor-pointer hover:bg-slate-700/80 transition" title="فیلتر کانتینرهای متوقف">
+                  <span class="text-slate-400">متوقف:</span>
+                  <span id="stat-stopped-containers" class="text-slate-300 font-bold">0</span>
+                </div>
+                <div class="px-3 py-1.5 rounded-xl bg-slate-800/80 border border-white/5 flex items-center gap-1.5">
+                  <span class="text-slate-400">ایمیج:</span>
+                  <span id="stat-images-count" class="text-blue-400 font-bold">0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Containers Table -->
+            <div class="mt-4">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-xs font-bold text-slate-300 flex items-center gap-2">
+                  <span>کانتینرهای اخیر</span>
+                  <span class="text-[10px] font-normal text-slate-500">(روی پورت‌ها کلیک کنید تا در مرورگر باز شوند)</span>
+                </h4>
+                <button onclick="switchTab('containers')" class="text-xs text-blue-400 hover:text-blue-300 font-medium">مشاهده و فیلتر همه کانتینرها ←</button>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-right text-xs">
+                  <thead class="text-slate-400 bg-slate-800/30 border-b border-white/5 uppercase font-mono text-[10.5px]">
+                    <tr>
+                      <th class="py-2.5 px-3">نام کانتینر</th>
+                      <th class="py-2.5 px-3">ایمیج (Image)</th>
+                      <th class="py-2.5 px-3">وضعیت</th>
+                      <th class="py-2.5 px-3">پورت‌ها (Click to Open)</th>
+                      <th class="py-2.5 px-3 text-center">عملیات سریع</th>
+                    </tr>
+                  </thead>
+                  <tbody id="quick-containers-tbody" class="divide-y divide-white/5">
+                    <tr>
+                      <td colspan="5" class="py-6 text-center text-slate-500 font-sans">در حال بارگذاری کانتینرها...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: ALL CONTAINERS ================= -->
+      <section id="tab-containers" class="hidden space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <span>مدیریت داکر، کانتینرها و ایمیج‌ها</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-mono">Docker Desktop Style</span>
+            </h2>
+            <p class="text-xs text-slate-400">مشاهده و اجرای کانتینر جدید، انتخاب ایمیج‌های موجود در سرور، مدیریت لاگ‌ها و پاکسازی داکر</p>
+          </div>
+          
+          <div class="flex items-center gap-2">
+            <button onclick="openRunContainerModal()" class="btn btn-primary text-xs px-3.5 py-1.5 shadow-md flex items-center gap-1.5">
+              <span>🚀 اجرای کانتینر (Run)</span>
+            </button>
+            <button onclick="openDockerDownloadsModal()" class="btn btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5 border-emerald-500/30 text-emerald-300 hover:text-white relative" title="صف و مدیریت دانلود ایمیج‌های داکر">
+              <span>⬇️ صف دانلود</span>
+              <span id="badge-docker-downloads-count" class="hidden px-1.5 py-0.5 text-[10px] rounded-full bg-emerald-500 text-slate-900 font-bold font-mono">0</span>
+            </button>
+            <button onclick="openDockerStartupModal()" class="btn btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5 border-amber-500/30 text-amber-300 hover:text-white" title="مدیریت راه‌اندازی خودکار کانتینرها و سرویس داکر در بوت سیستم لینوکس">
+              <span>⚙️ استارت‌آپ و بوت</span>
+            </button>
+            <button onclick="openDockerHubModal()" class="btn btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5 border-sky-500/30 text-sky-300 hover:text-white" title="جستجو در داکر هاب و تنظیم میرورهای تحریم‌شکن داکر">
+              <span>🌐 داکر هاب و میرورها</span>
+            </button>
+            <button onclick="openDockerImagesModal()" class="btn btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5">
+              <span>📦 ایمیج‌ها (<span id="badge-docker-images-count">0</span>)</span>
+            </button>
+            <button onclick="promptPruneDocker()" class="btn btn-outline text-xs px-2.5 py-1.5 text-rose-400 hover:bg-rose-500/10" title="پاکسازی ایمیج‌ها و کانتینرهای بلااستفاده">
+              🧹 پاکسازی
+            </button>
+          </div>
+        </div>
+
+        <!-- Docker Host Gateway & Database Connection Tip Banner -->
+        <div class="p-3 rounded-xl bg-gradient-to-r from-blue-950/40 via-slate-900/60 to-slate-900/40 border border-blue-500/20 flex flex-wrap items-center justify-between gap-3 text-xs shadow-lg">
+          <div class="flex items-center gap-2.5">
+            <span class="text-lg">💡</span>
+            <div class="text-slate-300">
+              <span class="font-bold text-sky-400">راهنمای اتصال به دیتابیس لوکال سرور:</span>
+              <span>برای اتصال کانتینرهای داکر به پایگاه‌داده یا سرویس‌های هاست (مثل MySQL پورت ۳۳۰۶)، به جای <code class="text-rose-400 font-mono">localhost</code> از آی‌پی دروازه داکر <code class="text-sky-300 font-mono font-bold bg-slate-800 px-1.5 py-0.5 rounded border border-white/5">172.17.0.1</code> استفاده کنید.</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="copyToClipboard('172.17.0.1')" class="btn btn-secondary text-xs px-3 py-1 text-sky-400 font-mono flex items-center gap-1.5 hover:text-white" title="کپی آی‌پی دروازه هاست">
+              <span>📋</span> کپی 172.17.0.1
+            </button>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+          <div class="flex items-center gap-1 bg-slate-800/80 border border-white/10 rounded-xl p-1 text-xs">
+            <button onclick="setContainerFilter('all')" id="filter-btn-all" class="px-3 py-1 rounded-lg font-medium transition bg-blue-600 text-white">همه</button>
+            <button onclick="setContainerFilter('running')" id="filter-btn-running" class="px-3 py-1 rounded-lg font-medium transition text-slate-400 hover:text-white">در حال اجرا</button>
+            <button onclick="setContainerFilter('stopped')" id="filter-btn-stopped" class="px-3 py-1 rounded-lg font-medium transition text-slate-400 hover:text-white">متوقف</button>
+          </div>
+          <input type="text" id="search-containers" oninput="filterContainersList()" placeholder="جستجوی نام یا ایمیج..." class="bg-slate-800/80 border border-white/10 text-xs text-white rounded-xl px-3 py-2 outline-none focus:border-blue-500 w-64 font-mono">
+        </div>
+
+        <div class="glass-panel p-4">
+          <div class="overflow-x-auto">
+            <table class="w-full text-right text-xs">
+              <thead class="text-slate-400 bg-slate-800/40 border-b border-white/5 uppercase font-mono text-[11px]">
+                <tr>
+                  <th class="py-3 px-3">شناسه و نام</th>
+                  <th class="py-3 px-3">ایمیج</th>
+                  <th class="py-3 px-3">وضعیت</th>
+                  <th class="py-3 px-3">استارت‌آپ (بوت)</th>
+                  <th class="py-3 px-3">پورت‌ها</th>
+                  <th class="py-3 px-3">تاریخ ساخت</th>
+                  <th class="py-3 px-3 text-center">عملیات</th>
+                </tr>
+              </thead>
+              <tbody id="all-containers-tbody" class="divide-y divide-white/5">
+                <tr>
+                  <td colspan="7" class="py-8 text-center text-slate-500">کانتینری یافت نشد.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: REMOTE FILE MANAGER ================= -->
+      <section id="tab-files" class="hidden space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <span>فایل‌منیجر ریموت و تبادل فایل</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-mono">SFTP</span>
+            </h2>
+            <p class="text-xs text-slate-400">مرور فایل‌های لینوکس، ادیتور آنلاین، آپلود مستقیم از ویندوز و دانلود فایل به کامپیوتر</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="promptLoadFileIntoDocker()" class="btn btn-secondary text-xs px-3 py-1.5 shadow-md flex items-center gap-1.5 border-blue-500/30 text-blue-300 hover:text-white" title="بارگذاری و ایمپورت مستقیم فایل ایزو/تار در داکر">
+              <span>🐳 لود ایزو/تار در داکر</span>
+            </button>
+            <button onclick="openDownloadUrlModal()" class="btn btn-primary text-xs px-3.5 py-1.5 shadow-md flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white">
+              <span>📥 دانلود از لینک اینترنتی (URL)</span>
+            </button>
+            <button onclick="triggerUploadFileInteractive()" class="btn btn-secondary text-xs px-3 py-1.5 shadow-md">
+              ⬆️ آپلود از ویندوز
+            </button>
+            <button onclick="promptCreateNewItem('folder')" class="btn btn-secondary text-xs px-2.5 py-1.5">
+              + پوشه
+            </button>
+            <button onclick="promptCreateNewItem('file')" class="btn btn-secondary text-xs px-2.5 py-1.5">
+              + فایل
+            </button>
+            <button onclick="refreshFileManager()" class="btn btn-outline text-xs px-2.5 py-1.5" title="بروزرسانی">
+              🔄
+            </button>
+          </div>
+        </div>
+
+        <!-- Path Bar & Breadcrumbs -->
+        <div class="glass-panel p-2.5 flex items-center gap-2">
+          <button onclick="navigateFileUp()" class="btn btn-secondary text-xs px-2.5 py-1" title="بازگشت به پوشه والد">
+            ⬆️ والد
+          </button>
+          <div class="flex-1 flex items-center bg-slate-900/80 border border-white/10 rounded-lg px-3 py-1">
+            <span class="text-slate-500 font-mono text-xs ml-1.5">مسیر:</span>
+            <input type="text" id="file-current-path" onkeydown="handleFilePathKey(event)" class="flex-1 bg-transparent text-xs font-mono text-white outline-none select-all">
+          </div>
+          <button onclick="navigateFileGo()" class="btn btn-primary text-xs px-3 py-1">برو</button>
+        </div>
+
+        <!-- Files Table -->
+        <div class="glass-panel p-4">
+          <div class="overflow-x-auto">
+            <table class="w-full text-right text-xs">
+              <thead class="text-slate-400 bg-slate-800/40 border-b border-white/5 uppercase font-mono text-[11px]">
+                <tr>
+                  <th class="py-3 px-3">نام فایل / پوشه</th>
+                  <th class="py-3 px-3">حجم</th>
+                  <th class="py-3 px-3">آخرین تغییر</th>
+                  <th class="py-3 px-3">دسترسی‌ها</th>
+                  <th class="py-3 px-3 text-center">عملیات</th>
+                </tr>
+              </thead>
+              <tbody id="files-list-tbody" class="divide-y divide-white/5">
+                <tr><td colspan="5" class="py-8 text-center text-slate-500">در حال بارگذاری فایل‌ها...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+
+
+
+
+      <!-- ================= TAB: TERMINAL ================= -->
+      <section id="tab-terminal" class="hidden h-full flex flex-col space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <span>کنسول و ترمینال SSH</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-mono">SSH Shell</span>
+            </h2>
+            <p class="text-xs text-slate-400">اجرای سریع دستورات لینوکسی روی سرور فعال</p>
+          </div>
+          <button onclick="clearTerminal()" class="btn btn-outline text-xs px-3 py-1">پاک کردن کنسول</button>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-1.5 text-[11px] font-mono">
+          <span class="text-slate-500 font-sans text-xs ml-1">دستورات سریع:</span>
+          <button onclick="runQuickCommand('uname -a')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-white/5">uname -a</button>
+          <button onclick="runQuickCommand('docker ps -a')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-white/5">docker ps -a</button>
+          <button onclick="runQuickCommand('docker images')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-white/5">docker images</button>
+          <button onclick="runQuickCommand('df -h')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-white/5">df -h</button>
+          <button onclick="runQuickCommand('free -h')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-white/5">free -h</button>
+          <button onclick="runQuickCommand('uptime')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-white/5">uptime</button>
+        </div>
+
+        <div id="term-output" class="log-terminal flex-1 min-h-[400px]">خوش آمدید! دستور مورد نظر را در کادر زیر وارد کنید و Enter بزنید...</div>
+
+        <div class="flex items-center gap-2">
+          <div class="flex-1 relative">
+            <span class="absolute right-3.5 top-2.5 text-slate-500 font-mono text-sm">$</span>
+            <input type="text" id="term-input" onkeydown="handleTerminalKey(event)" placeholder="مثال: docker ps یا ls -la یا htop یا apt update ..." class="w-full bg-[#0a0e17] border border-white/10 rounded-xl pr-8 pl-3 py-2.5 text-xs font-mono text-white outline-none focus:border-blue-500">
+          </div>
+          <button onclick="executeTerminalCommand()" id="btn-term-send" class="btn btn-primary text-xs px-5 py-2.5 font-bold">ارسال دستور</button>
+        </div>
+      </section>
+
+      <!-- ================= TAB: REMOTE DESKTOP (RDP) ================= -->
+      <section id="tab-rdp" class="hidden space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <span>ریموت دسکتاپ گرافیکی (Remote Desktop / RDP)</span>
+              <span id="rdp-status-badge" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">در حال بررسی...</span>
+            </h2>
+            <p class="text-xs text-slate-400">اتصال مستقیم، پرسرعت و بدون لگ به دسکتاپ لینوکس با کلاینت بومی ویندوز (mstsc) و حل خودکار باگ‌ها</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="checkRdpStatus(true)" class="btn btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              بروزرسانی وضعیت سرویس
+            </button>
+          </div>
+        </div>
+
+        <!-- Warning Banner for Active Local Physical Session -->
+        <div id="rdp-local-warning-banner" class="hidden p-4 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-200 text-xs flex items-start gap-3">
+          <span class="text-2xl">⚠️</span>
+          <div class="space-y-1">
+            <h4 class="font-bold text-amber-300 text-sm">توجه بسیار مهم: علت اصلی صفحه سیاه با آیکون موس (Black Screen):</h4>
+            <p class="leading-relaxed text-[11px] text-slate-300">
+              یک نشست فعال بر روی <b>مانیتور فیزیکی خود کامپیوتر لینوکس</b> شناسایی شد. میزکار <b>Cinnamon</b> در لینوکس مینت به یک کاربر اجازه باز کردن همزمان دو نشست (فیزیکی + RDP) را نمی‌دهد و باعث سیاه ماندن صفحه می‌شود!
+            </p>
+            <div class="pt-1 text-[11px] text-amber-200 flex flex-wrap gap-4">
+              <span>👉 <b>راه‌حل ۱:</b> روی مانیتور فیزیکی کامپیوتر لینوکس دکمه <b>Log Out (خروج از حساب)</b> را بزنید و سپس متصل شوید.</span>
+              <span>👉 <b>راه‌حل ۲:</b> روی دکمه «نصب میزکار سبک XFCE» زیر کلیک کنید تا بدون نیاز به خروج، ریموت دسکتاپ فوراً باز شود.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RDP Main Action Cards -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <!-- Card 1: Windows Client Connect -->
+          <div class="glass-panel p-6 flex flex-col justify-between space-y-5 border-blue-500/20">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xl">🖥️</div>
+                  <div>
+                    <h3 class="font-bold text-white text-base">اتصال فوری با کلاینت ویندوز (mstsc)</h3>
+                    <p class="text-xs text-slate-400">باز کردن مستقیم Remote Desktop Connection با تنظیمات بهینه</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="space-y-3 mt-4">
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">آدرس سرور و پورت RDP:</label>
+                  <div class="flex items-center gap-2">
+                    <input type="text" id="rdp-target-host" readonly class="flex-1 bg-[#0a0e17] border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-emerald-400 font-bold outline-none" value="--">
+                    <span class="text-xs font-mono text-slate-500">:3389</span>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">نام کاربری لینوکس:</label>
+                  <input type="text" id="rdp-target-user" class="w-full bg-[#0a0e17] border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none focus:border-blue-500" placeholder="مثال: root یا نام کاربری شما">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label class="block text-[11px] text-slate-300 font-bold mb-1">کیفیت و رزولوشن صفحه:</label>
+                    <select id="rdp-resolution-select" class="w-full bg-[#0a0e17] border border-white/10 rounded-xl px-2.5 py-2 text-xs font-mono text-white outline-none focus:border-blue-500">
+                      <option value="1920x1080" selected>Full HD (1920 × 1080) ⭐ پیشنهادی 2K</option>
+                      <option value="1600x900">HD+ (1600 × 900) - آیکون‌های بزرگتر</option>
+                      <option value="2560x1440">2K QHD (2560 × 1440)</option>
+                      <option value="1280x720">HD (1280 × 720)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[11px] text-slate-300 font-bold mb-1">بزرگ‌نمایی و مقیاس (Scale):</label>
+                    <select id="rdp-scale-select" class="w-full bg-[#0a0e17] border border-white/10 rounded-xl px-2.5 py-2 text-xs font-mono text-white outline-none focus:border-blue-500">
+                      <option value="125" selected>125% (بهینه برای 2K)</option>
+                      <option value="150">150% (آیکون و متن درشت)</option>
+                      <option value="100">100% (اندازه معمولی)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="pt-2 flex items-center justify-between">
+                  <span class="text-[11px] text-slate-400">آیکون‌های لینوکس کوچک هستند؟</span>
+                  <button type="button" onclick="applyLinuxHighDpi()" id="btn-rdp-dpi" class="px-2.5 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-[11px] font-bold">
+                    🔍 درشت کردن آیکون‌ها و فونت‌ها در لینوکس
+                  </button>
+                </div>
+              </div>
+
+              <div class="p-3 mt-3 rounded-xl bg-blue-950/20 border border-blue-500/20 text-[11px] text-blue-300 leading-relaxed">
+                💡 <b>حل مشکل مانیتور 2K:</b> رزولوشن روی <b>Full HD (1920×1080)</b> با بزرگ‌نمایی هوشمند (Smart Sizing) تنظیم شده است تا پنجره به تناسب مانیتور شما باز شود و آیکون‌ها کاملاً خوانا باشند.
+              </div>
+            </div>
+
+            <button onclick="launchWindowsRdpClient()" id="btn-rdp-launch" class="btn btn-primary text-sm py-3 w-full font-bold flex items-center justify-center gap-2">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+              </svg>
+              🚀 باز کردن ریموت دسکتاپ ویندوز
+            </button>
+          </div>
+
+          <!-- Card 2: 1-Click Auto-Fix & Service Setup -->
+          <div class="glass-panel p-6 flex flex-col justify-between space-y-5 border-emerald-500/20">
+            <div>
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xl">🛠️</div>
+                <div>
+                  <h3 class="font-bold text-white text-base">رفع باگ صفحه سیاه و راه‌اندازی (Auto-Fix)</h3>
+                  <p class="text-xs text-slate-400">حل تضمینی صفحه سیاه با اصلاح اسکریپت startwm.sh و حذف تداخل D-Bus</p>
+                </div>
+              </div>
+
+              <div class="space-y-2 mt-4 text-[11px] text-slate-300">
+                <div class="flex items-start gap-2">
+                  <span class="text-emerald-400 font-bold">✓</span>
+                  <span><b>اصلاح startwm.sh:</b> پاکسازی خودکار متغیرهای متناقض D-Bus و systemd در اسکریپت رانر xrdp</span>
+                </div>
+                <div class="flex items-start gap-2">
+                  <span class="text-emerald-400 font-bold">✓</span>
+                  <span><b>رفع فریز احراز هویت:</b> غیرفعال‌سازی پاپ‌آپ‌های Polkit Color Manager</span>
+                </div>
+                <div class="flex items-start gap-2">
+                  <span class="text-emerald-400 font-bold">✓</span>
+                  <span><b>میزکار بدون شتاب‌نگار 3D:</b> اعمال حالت Cinnamon 2D سازگار با Xorg</span>
+                </div>
+              </div>
+
+              <div class="mt-3">
+                <label class="block text-[11px] text-slate-400 mb-1">رمز عبور sudo سرور لینوکس (جهت اعمال تنظیمات سیستمی):</label>
+                <input type="password" id="rdp-sudo-pass" class="w-full bg-[#0a0e17] border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none focus:border-emerald-500" placeholder="رمز عبور کاربر sudo">
+              </div>
+            </div>
+
+            <div class="space-y-2 pt-2">
+              <div class="flex flex-col sm:flex-row gap-2">
+                <button onclick="promptSetupRdpService()" id="btn-rdp-setup" class="btn btn-primary text-xs py-2.5 flex-1 font-bold bg-emerald-600 hover:bg-emerald-500">
+                  🛠️ اعمال پچ ضد صفحه سیاه (Fix Black Screen)
+                </button>
+                <button onclick="restartRdpService()" id="btn-rdp-restart" class="btn btn-secondary text-xs py-2.5 px-3 font-bold">
+                  🔄 ری‌استارت
+                </button>
+              </div>
+              <button onclick="installXfceForRdp()" id="btn-rdp-xfce" class="btn btn-secondary text-xs py-2 w-full font-bold border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10">
+                📦 نصب میزکار سبک XFCE ویژه ریموت (حل قطعی بدون نیاز به خروج فیزیکی)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Guide & Troubleshoot FAQ -->
+        <div class="glass-panel p-5 space-y-3">
+          <h4 class="text-xs font-bold text-white flex items-center gap-2">
+            <span>📋 راهنمای گام‌به‌گام و رفع ابهام</span>
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-400 leading-relaxed">
+            <div class="p-3 rounded-xl bg-slate-900/50 border border-white/5 space-y-1">
+              <div class="text-slate-200 font-bold flex items-center gap-1.5">۱. بررسی وضعیت سرویس</div>
+              <p class="text-[11px]">اگر نشان وضعیت بالای صفحه سبز باشد، سرویس فعال است. در غیر این صورت روی دکمه «نصب و تعمیر خودکار» کلیک کنید.</p>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-900/50 border border-white/5 space-y-1">
+              <div class="text-slate-200 font-bold flex items-center gap-1.5">۲. لاگین در صفحه xrdp</div>
+              <p class="text-[11px]">در پنجره باز شده xrdp ماژول را روی Xorg بگذارید، یوزرنیم و پسورد لینوکس خود را وارد نمایید و OK بزنید.</p>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-900/50 border border-white/5 space-y-1">
+              <div class="text-slate-200 font-bold flex items-center gap-1.5">۳. کلیپ‌بورد و رزولوشن</div>
+              <p class="text-[11px]">کلیپ‌بورد دوطرفه متن بین ویندوز و لینوکس به صورت پیش‌فرض فعال و رزولوشن صفحه هوشمندانه منطبق می‌شود.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: POWER MANAGEMENT ================= -->
+      <section id="tab-power" class="hidden space-y-6">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <span>مدیریت و کنترل پاور (Power Management)</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-mono">System Power</span>
+          </h2>
+          <p class="text-xs text-slate-400">راه‌اندازی مجدد، حالت خواب (Suspend) و خاموش کردن ایمن سیستم‌عامل لینوکس</p>
+        </div>
+
+        <!-- Power Action Cards (3 Cards) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="glass-panel p-5 flex flex-col justify-between space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-lg">🔄</div>
+              <div>
+                <h3 class="font-bold text-white">راه‌اندازی مجدد (Reboot)</h3>
+                <p class="text-xs text-slate-400">ری‌استارت امن سیستم‌عامل</p>
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-400 leading-relaxed">سیستم بلافاصله ری‌استارت می‌شود و پس از حدود ۳۰ ثانیه مجدداً آنلاین خواهد شد.</p>
+            <button onclick="triggerPowerAction('reboot')" class="btn btn-primary text-xs py-2 w-full font-bold">
+              ارسال دستور Reboot
+            </button>
+          </div>
+
+          <div class="glass-panel p-5 flex flex-col justify-between space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-lg">💤</div>
+              <div>
+                <h3 class="font-bold text-white">حالت تعلیق (Suspend / Sleep)</h3>
+                <p class="text-xs text-slate-400">کاهش مصرف برق با خواب موقت</p>
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-400 leading-relaxed">سیستم با مصرف برق ناچیز به خواب می‌رود و با فشردن دکمه پاور فیزیکی کیس بیدار می‌شود.</p>
+            <button onclick="triggerPowerAction('suspend')" class="btn btn-secondary text-xs py-2 w-full font-bold">
+              رفتن به حالت Suspend
+            </button>
+          </div>
+
+          <div class="glass-panel p-5 flex flex-col justify-between space-y-4 border-rose-500/20">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-lg">⏻</div>
+              <div>
+                <h3 class="font-bold text-white">خاموش کردن (Power Off)</h3>
+                <p class="text-xs text-slate-400">خاموشی کامل و امن سیستم</p>
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-400 leading-relaxed">سیستم کارهای در حال اجرا را متوقف و کامپیوتر را کاملاً خاموش می‌کند.</p>
+            <button onclick="triggerPowerAction('shutdown')" class="btn btn-danger text-xs py-2 w-full font-bold">
+              خاموش کردن سیستم
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: WEB SERVER & DATABASE (LAMP) ================= -->
+      <section id="tab-webserver" class="hidden space-y-6">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <span>مدیریت وب‌سرور و دیتابیس (LAMP Stack)</span>
+              <span id="web-header-badge" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">در حال بررسی...</span>
+            </h2>
+            <p class="text-xs text-slate-400">مدیریت کامل Apache/Nginx، پایگاه‌داده‌های MySQL/MariaDB، تنظیمات PHP و هاست‌های مجازی سیستم لینوکس</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="refreshWebServerData(true)" id="btn-web-refresh" class="btn btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5 font-bold">
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              بروزرسانی وضعیت
+            </button>
+            <button onclick="testWebConfig()" class="btn btn-secondary text-xs px-3 py-1.5 font-bold flex items-center gap-1 text-sky-400">
+              🧪 تست کانفیگ (configtest)
+            </button>
+            <button onclick="openWebLogsModal()" class="btn btn-secondary text-xs px-3 py-1.5 font-bold flex items-center gap-1 text-slate-300">
+              📋 لاگ‌ها
+            </button>
+            <button onclick="openDocRootInFileManager()" class="btn btn-secondary text-xs px-3 py-1.5 font-bold flex items-center gap-1 text-emerald-400">
+              📁 پوشه /var/www/html
+            </button>
+            <button onclick="installLampStack()" id="btn-lamp-install" class="btn btn-primary text-xs px-3.5 py-1.5 font-bold bg-amber-600 hover:bg-amber-500 text-white flex items-center gap-1.5">
+              ⚡ نصب ۱ کلیک پکیج LAMP
+            </button>
+          </div>
+        </div>
+
+        <!-- 3 Service Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Card 1: Web Server (Apache / Nginx) -->
+          <div class="glass-panel p-5 flex flex-col justify-between space-y-4 border-sky-500/20">
+            <div>
+              <div class="flex items-center justify-between pb-3 border-b border-white/5">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-lg">🌐</div>
+                  <div>
+                    <h3 class="font-bold text-white text-sm" id="web-service-title">وب‌سرور آپاچی (Apache2)</h3>
+                    <p id="web-apache-version" class="text-[11px] text-slate-400 font-mono">در حال بررسی...</p>
+                  </div>
+                </div>
+                <span id="web-apache-status-pill" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">نامشخص</span>
+              </div>
+
+              <div class="space-y-2 mt-3 text-xs">
+                <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-white/5">
+                  <span class="text-slate-400 text-[11px]">پورت‌های فعال شبکه:</span>
+                  <span id="web-apache-ports" class="font-mono text-sky-400 font-bold text-xs">Port 80, 443</span>
+                </div>
+                <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-white/5">
+                  <span class="text-slate-400 text-[11px]">پوشه ریشه (DocumentRoot):</span>
+                  <span class="font-mono text-slate-300 text-xs">/var/www/html</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Service Actions -->
+            <div class="grid grid-cols-4 gap-1.5 pt-3 border-t border-white/5">
+              <button onclick="controlWebService('apache2', 'start')" class="btn btn-secondary text-[11px] py-1.5 text-emerald-400 font-bold">شروع</button>
+              <button onclick="controlWebService('apache2', 'stop')" class="btn btn-secondary text-[11px] py-1.5 text-rose-400 font-bold">توقف</button>
+              <button onclick="controlWebService('apache2', 'restart')" class="btn btn-secondary text-[11px] py-1.5 text-amber-400 font-bold">ری‌استارت</button>
+              <button onclick="controlWebService('apache2', 'reload')" class="btn btn-secondary text-[11px] py-1.5 text-blue-400 font-bold">لود مجدد</button>
+            </div>
+          </div>
+
+          <!-- Card 2: Database Server (MySQL / MariaDB) -->
+          <div class="glass-panel p-5 flex flex-col justify-between space-y-4 border-amber-500/20">
+            <div>
+              <div class="flex items-center justify-between pb-3 border-b border-white/5">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-lg">🐬</div>
+                  <div>
+                    <h3 class="font-bold text-white text-sm" id="web-db-title">پایگاه داده MySQL / MariaDB</h3>
+                    <p id="web-mysql-version" class="text-[11px] text-slate-400 font-mono">در حال بررسی...</p>
+                  </div>
+                </div>
+                <span id="web-mysql-status-pill" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">نامشخص</span>
+              </div>
+
+              <div class="space-y-2 mt-3 text-xs">
+                <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-white/5">
+                  <span class="text-slate-400 text-[11px]">پورت گوش فرادادن:</span>
+                  <span id="web-mysql-port" class="font-mono text-amber-400 font-bold text-xs">Port 3306</span>
+                </div>
+                <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-white/5">
+                  <span class="text-slate-400 text-[11px]">تعداد دیتابیس‌ها:</span>
+                  <span id="web-mysql-db-count" class="font-mono text-slate-200 font-bold text-xs">0 دیتابیس</span>
+                </div>
+                <div class="flex items-center justify-between p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                  <span class="text-sky-300 text-[11px] flex items-center gap-1">
+                    <span>🐳</span> آی‌پی اتصال داکر به دیتابیس:
+                  </span>
+                  <div class="flex items-center gap-1.5 font-mono">
+                    <span class="text-sky-200 font-bold text-xs">172.17.0.1:3306</span>
+                    <button type="button" onclick="copyToClipboard('172.17.0.1')" class="text-sky-400 hover:text-white text-xs px-1.5 py-0.5 rounded bg-slate-800 border border-white/5" title="کپی آی‌پی داکر">📋</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- MySQL Service Actions -->
+            <div class="grid grid-cols-3 gap-2 pt-3 border-t border-white/5">
+              <button onclick="controlWebService('mysql', 'start')" class="btn btn-secondary text-[11px] py-1.5 text-emerald-400 font-bold">شروع</button>
+              <button onclick="controlWebService('mysql', 'stop')" class="btn btn-secondary text-[11px] py-1.5 text-rose-400 font-bold">توقف</button>
+              <button onclick="controlWebService('mysql', 'restart')" class="btn btn-secondary text-[11px] py-1.5 text-amber-400 font-bold">ری‌استارت</button>
+            </div>
+          </div>
+
+          <!-- Card 3: PHP Runtime -->
+          <div class="glass-panel p-5 flex flex-col justify-between space-y-4 border-indigo-500/20">
+            <div>
+              <div class="flex items-center justify-between pb-3 border-b border-white/5">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-lg">🐘</div>
+                  <div>
+                    <h3 class="font-bold text-white text-sm">محیط اجرایی PHP</h3>
+                    <p id="web-php-version" class="text-[11px] text-slate-400 font-mono">در حال بررسی...</p>
+                  </div>
+                </div>
+                <span id="web-php-status-pill" class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">نامشخص</span>
+              </div>
+
+              <div class="space-y-2 mt-3 text-xs">
+                <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-white/5">
+                  <span class="text-slate-400 text-[11px]">محدودیت حافظه (Memory):</span>
+                  <span id="web-php-memory" class="font-mono text-indigo-400 font-bold text-xs">--</span>
+                </div>
+                <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-white/5">
+                  <span class="text-slate-400 text-[11px]">حداکثر حجم آپلود فایل:</span>
+                  <span id="web-php-upload" class="font-mono text-slate-200 font-bold text-xs">--</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Extensions Tag preview -->
+            <div class="pt-3 border-t border-white/5">
+              <div class="text-[10px] text-slate-400 mb-1.5">ماژول‌های کلیدی PHP:</div>
+              <div id="web-php-exts-tags" class="flex flex-wrap gap-1 text-[10px] font-mono text-slate-300">
+                <span class="px-1.5 py-0.5 rounded bg-slate-800">mysqli</span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-800">pdo</span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-800">curl</span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-800">mbstring</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Virtual Hosts Management -->
+        <div class="glass-panel p-5 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/5">
+            <div>
+              <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                <span>مدیریت هاست‌های مجازی (Apache Virtual Hosts)</span>
+                <span id="web-vhosts-count" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">0 سایت</span>
+              </h3>
+              <p class="text-[11px] text-slate-400">میزبانی چندین دامنه و وب‌سایت مستقل بر روی یک سرور لینوکس</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="openCreateVhostModal()" class="btn btn-primary text-xs px-3.5 py-1.5 font-bold bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-1.5">
+                <span>➕</span> افزودن هاست مجازی جدید
+              </button>
+            </div>
+          </div>
+
+          <!-- Virtual Hosts Table -->
+          <div class="overflow-x-auto rounded-xl border border-white/5">
+            <table class="w-full text-right text-xs">
+              <thead class="bg-[#0a0e17] text-slate-400 text-[11px] border-b border-white/5">
+                <tr>
+                  <th class="py-2.5 px-3">نام فایل کانفیگ</th>
+                  <th class="py-2.5 px-3">نام دامنه (ServerName)</th>
+                  <th class="py-2.5 px-3">پورت</th>
+                  <th class="py-2.5 px-3">مسیر فایل‌ها (DocumentRoot)</th>
+                  <th class="py-2.5 px-3">وضعیت</th>
+                  <th class="py-2.5 px-3 text-center">عملیات</th>
+                </tr>
+              </thead>
+              <tbody id="web-vhosts-tbody" class="divide-y divide-white/5 text-slate-300">
+                <tr>
+                  <td colspan="6" class="text-center py-6 text-slate-500 font-mono">در حال دریافت لیست هاست‌های مجازی...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Section: MySQL Databases Management -->
+        <div class="glass-panel p-5 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/5">
+            <div>
+              <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                <span>پایگاه‌های داده MySQL / MariaDB</span>
+                <span id="web-databases-count" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">0 دیتابیس</span>
+              </h3>
+              <p class="text-[11px] text-slate-400">مشاهده پایگاه‌ها، ساخت دیتابیس جدید، تهیه بکاپ خودکار و اجرای کوئری SQL</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="openSqlQueryModal()" class="btn btn-secondary text-xs px-3 py-1.5 font-bold flex items-center gap-1.5 text-sky-400">
+                <span>💻</span> کنسول کوئری SQL
+              </button>
+              <button onclick="openCreateDbModal()" class="btn btn-primary text-xs px-3.5 py-1.5 font-bold bg-amber-600 hover:bg-amber-500 text-white flex items-center gap-1.5">
+                <span>➕</span> ساخت پایگاه داده جدید
+              </button>
+            </div>
+          </div>
+
+          <!-- Databases Table -->
+          <div class="overflow-x-auto rounded-xl border border-white/5">
+            <table class="w-full text-right text-xs">
+              <thead class="bg-[#0a0e17] text-slate-400 text-[11px] border-b border-white/5">
+                <tr>
+                  <th class="py-2.5 px-3">نام پایگاه داده</th>
+                  <th class="py-2.5 px-3">تعداد جداول (Tables)</th>
+                  <th class="py-2.5 px-3">حجم دیتابیس (Size)</th>
+                  <th class="py-2.5 px-3 text-center">عملیات</th>
+                </tr>
+              </thead>
+              <tbody id="web-databases-tbody" class="divide-y divide-white/5 text-slate-300">
+                <tr>
+                  <td colspan="4" class="text-center py-6 text-slate-500 font-mono">در حال دریافت لیست پایگاه‌های داده...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: TAILSCALE MESH NETWORK ================= -->
+      <section id="tab-tailscale" class="hidden space-y-6">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <span>شبکه امن تایل‌اسکیل (Tailscale Mesh VPN)</span>
+              <span id="ts-header-badge" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">در حال بررسی...</span>
+            </h2>
+            <p class="text-xs text-slate-400">اتصال امن نقطه به نقطه (P2P WireGuard)، مدیریت Exit Node و دسترسی به تمام سیستم‌های شبکه بدون نیاز به پورت‌فوروارد</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="refreshTailscaleStatus(true)" id="btn-ts-refresh" class="btn btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              بروزرسانی وضعیت شبکه
+            </button>
+          </div>
+        </div>
+
+        <!-- Dual Node Cards: Local Windows Client & Remote Linux Client -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <!-- Card 1: Windows Client (Local Machine) -->
+          <div class="glass-panel p-5 flex flex-col justify-between space-y-4 border-blue-500/20">
+            <div>
+              <div class="flex items-center justify-between pb-3 border-b border-white/5">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-base">🪟</div>
+                  <div>
+                    <h3 class="font-bold text-white text-sm">کلاینت ویندوز (دستگاه محلی شما)</h3>
+                    <p id="ts-local-subtext" class="text-[11px] text-slate-400 font-mono">Windows Tailscale Node</p>
+                  </div>
+                </div>
+                <span id="ts-local-status-pill" class="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">نامشخص</span>
+              </div>
+
+              <!-- Local Details -->
+              <div class="grid grid-cols-2 gap-3 mt-3 text-xs">
+                <div class="p-2.5 rounded-xl bg-slate-900/60 border border-white/5">
+                  <span class="text-[10px] text-slate-500 block">آدرس IP در Tailscale:</span>
+                  <div class="flex items-center justify-between mt-1">
+                    <span id="ts-local-ip" class="font-mono text-emerald-400 font-bold text-xs select-all">--</span>
+                    <button onclick="copyToClipboard(document.getElementById('ts-local-ip').textContent)" class="text-[10px] text-slate-400 hover:text-white px-1.5 py-0.5 rounded bg-slate-800">📋 کپی</button>
+                  </div>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-900/60 border border-white/5">
+                  <span class="text-[10px] text-slate-500 block">نام دستگاه و Tailnet:</span>
+                  <div class="truncate mt-1 font-mono text-slate-300 text-xs" id="ts-local-tailnet">--</div>
+                </div>
+              </div>
+
+              <!-- Local Exit Node Selector -->
+              <div class="mt-4 p-3 rounded-xl bg-slate-900/40 border border-white/5">
+                <label class="block text-[11px] font-bold text-slate-300 mb-1.5">خروجی اینترنت (Exit Node برای ویندوز):</label>
+                <div class="flex items-center gap-2">
+                  <select id="ts-local-exit-node-select" class="flex-1 bg-[#0a0e17] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-white outline-none focus:border-blue-500">
+                    <option value="">بدون Exit Node (اتصال مستقیم عادی)</option>
+                  </select>
+                  <button onclick="applyLocalExitNode()" class="btn btn-primary text-xs px-3 py-1.5 font-bold">اعمال</button>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-1">تمام ترافیک اینترنت ویندوز از طریق گره انتخاب‌شده (مثلاً سرور لینوکس خارج از کشور) عبور داده می‌شود.</p>
+              </div>
+
+              <!-- Local Toggle Flags -->
+              <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                <label class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-900/40 border border-white/5 cursor-pointer hover:border-white/20">
+                  <input type="checkbox" id="ts-local-opt-shields" onchange="toggleLocalTsPref('shields-up', this.checked)" class="rounded bg-slate-800">
+                  <span class="text-[11px] text-slate-300">مسدودسازی دسترسی ورودی (Shields Up)</span>
+                </label>
+                <label class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-900/40 border border-white/5 cursor-pointer hover:border-white/20">
+                  <input type="checkbox" id="ts-local-opt-routes" onchange="toggleLocalTsPref('accept-routes', this.checked)" class="rounded bg-slate-800" checked>
+                  <span class="text-[11px] text-slate-300">پذیرش مسیرهای روتینگ (Accept Routes)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Local Actions -->
+            <div class="flex items-center gap-2 pt-2 border-t border-white/5">
+              <button onclick="triggerLocalTsUp()" id="btn-ts-local-up" class="btn btn-primary text-xs flex-1 font-bold">
+                ⚡ اتصال Tailscale ویندوز
+              </button>
+              <button onclick="triggerLocalTsDown()" id="btn-ts-local-down" class="btn btn-secondary text-xs px-3 font-bold text-rose-400">
+                قطع اتصال
+              </button>
+            </div>
+          </div>
+
+          <!-- Card 2: Remote Linux Server Node -->
+          <div class="glass-panel p-5 flex flex-col justify-between space-y-4 border-emerald-500/20">
+            <div>
+              <div class="flex items-center justify-between pb-3 border-b border-white/5">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-base">🐧</div>
+                  <div>
+                    <h3 class="font-bold text-white text-sm">سرور لینوکس متصل (Linux Server Node)</h3>
+                    <p id="ts-remote-subtext" class="text-[11px] text-slate-400 font-mono">SSH Connected Remote Node</p>
+                  </div>
+                </div>
+                <span id="ts-remote-status-pill" class="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">نامشخص</span>
+              </div>
+
+              <!-- Remote Details -->
+              <div class="grid grid-cols-2 gap-3 mt-3 text-xs">
+                <div class="p-2.5 rounded-xl bg-slate-900/60 border border-white/5">
+                  <span class="text-[10px] text-slate-500 block">آدرس IP لینوکس در Tailscale:</span>
+                  <div class="flex items-center justify-between mt-1">
+                    <span id="ts-remote-ip" class="font-mono text-emerald-400 font-bold text-xs select-all">--</span>
+                    <button onclick="copyToClipboard(document.getElementById('ts-remote-ip').textContent)" class="text-[10px] text-slate-400 hover:text-white px-1.5 py-0.5 rounded bg-slate-800">📋 کپی</button>
+                  </div>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-900/60 border border-white/5">
+                  <span class="text-[10px] text-slate-500 block">نام هاست نود لینوکس:</span>
+                  <div class="truncate mt-1 font-mono text-slate-300 text-xs" id="ts-remote-hostname">--</div>
+                </div>
+              </div>
+
+              <!-- Remote Advanced Options -->
+              <div class="mt-4 p-3 rounded-xl bg-slate-900/40 border border-white/5 space-y-2.5">
+                <div class="text-[11px] font-bold text-slate-300 mb-1">قابلیت‌های سرور لینوکس در شبکه Tailscale:</div>
+                
+                <div class="flex items-center justify-between text-xs">
+                  <div>
+                    <div class="text-slate-200 font-bold text-[11px]">تبلیغ سرور به عنوان Exit Node</div>
+                    <div class="text-[10px] text-slate-400">امکان استفاده از این سرور لینوکس به عنوان وی‌پی‌ان خروجی برای تمام دستگاه‌ها</div>
+                  </div>
+                  <button onclick="toggleRemoteExitNodeAdv()" id="btn-ts-toggle-exit-adv" class="btn btn-secondary text-[11px] px-3 py-1 font-bold">
+                    بررسی...
+                  </button>
+                </div>
+
+                <div class="flex items-center justify-between text-xs pt-2 border-t border-white/5">
+                  <div>
+                    <div class="text-slate-200 font-bold text-[11px]">Tailscale SSH مستقیم</div>
+                    <div class="text-[10px] text-slate-400">احراز هویت SSH توسط خود Tailscale بدون نیاز به کلید یا پورت باز</div>
+                  </div>
+                  <button onclick="toggleRemoteTsSsh()" id="btn-ts-toggle-ssh" class="btn btn-secondary text-[11px] px-3 py-1 font-bold">
+                    بررسی...
+                  </button>
+                </div>
+              </div>
+
+              <!-- Banner if remote is not installed -->
+              <div id="ts-remote-install-box" class="hidden mt-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs">
+                <div class="flex items-center justify-between">
+                  <span class="text-amber-300 text-[11px]">⚠️ Tailscale روی این سرور لینوکس نصب نیست.</span>
+                  <button onclick="installTailscaleOnLinux()" id="btn-ts-install-linux" class="btn btn-primary text-xs px-3 py-1 bg-amber-600 hover:bg-amber-500 font-bold">
+                    ⚡ نصب خودکار با ۱ کلیک
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Remote Actions -->
+            <div class="flex items-center gap-2 pt-2 border-t border-white/5">
+              <button onclick="triggerRemoteTsUp()" id="btn-ts-remote-up" class="btn btn-primary text-xs flex-1 font-bold bg-emerald-600 hover:bg-emerald-500">
+                ⚡ اتصال Tailscale لینوکس
+              </button>
+              <button onclick="triggerRemoteTsDown()" id="btn-ts-remote-down" class="btn btn-secondary text-xs px-3 font-bold text-rose-400">
+                قطع اتصال
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Peers List (Devices on Tailnet) -->
+        <div class="glass-panel p-5 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                <span>دستگاه‌ها و کلاینت‌های متصل به شبکه (Tailscale Peers)</span>
+                <span id="ts-peers-count" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">0 دستگاه</span>
+              </h3>
+              <p class="text-[11px] text-slate-400">تمام کامپیوترها، سرورها و موبایل‌های متصل به حساب تایل‌اسکیل شما</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="text" id="ts-peer-search" oninput="filterTailscalePeersTable()" placeholder="جستجوی نام یا IP..." class="bg-[#0a0e17] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-blue-500 w-48">
+            </div>
+          </div>
+
+          <!-- Peers Table -->
+          <div class="overflow-x-auto rounded-xl border border-white/5">
+            <table class="w-full text-right text-xs">
+              <thead class="bg-[#0a0e17] text-slate-400 text-[11px] border-b border-white/5">
+                <tr>
+                  <th class="py-2.5 px-3">نام دستگاه (Device)</th>
+                  <th class="py-2.5 px-3">سیستم‌عامل</th>
+                  <th class="py-2.5 px-3">آدرس Tailscale IP</th>
+                  <th class="py-2.5 px-3">وضعیت</th>
+                  <th class="py-2.5 px-3">نقش Exit Node</th>
+                  <th class="py-2.5 px-3 text-center">عملیات</th>
+                </tr>
+              </thead>
+              <tbody id="ts-peers-tbody" class="divide-y divide-white/5 font-sans">
+                <tr>
+                  <td colspan="6" class="text-center py-6 text-slate-500">در حال دریافت لیست دستگاه‌های متصل...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tailscale Funnel Management Panel -->
+        <div class="glass-panel p-5 space-y-4 border-indigo-500/20">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/5">
+            <div>
+              <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                <span>🚀 اشتراک‌گذاری عمومی با اینترنت (Tailscale Funnel)</span>
+                <span id="ts-funnel-status-badge" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">در حال بررسی...</span>
+              </h3>
+              <p class="text-[11px] text-slate-400">انتقال ترافیک از کل اینترنت عمومی به وب‌سرور یا پورت‌های داخلی لینوکس با دامنه HTTPS رسمی تایل‌اسکیل (بدون نیاز به پورت‌فوروارد یا IP استاتیک)</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="refreshTailscaleFunnelStatus(true)" id="btn-ts-funnel-refresh" class="btn btn-secondary text-xs px-3 py-1.5 font-bold flex items-center gap-1.5">
+                <span>🔄</span> بروزرسانی Funnel
+              </button>
+            </div>
+          </div>
+
+          <!-- Active Funnel State Box (when active) -->
+          <div id="ts-funnel-active-box" class="hidden p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/30 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="space-y-1">
+                <span class="text-[11px] font-bold text-emerald-400 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  دامنه عمومی فعال اینترنتی (Public URL):
+                </span>
+                <div class="flex items-center gap-2">
+                  <a id="ts-funnel-url-link" href="#" target="_blank" class="font-mono text-emerald-300 font-bold text-sm hover:underline ltr text-left select-all">--</a>
+                  <button onclick="copyToClipboard(document.getElementById('ts-funnel-url-link').textContent)" class="text-[11px] text-slate-300 hover:text-white px-2 py-0.5 rounded bg-slate-800">📋 کپی آدرس</button>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="openFunnelInBrowser()" class="btn btn-secondary text-xs px-3 py-1.5 font-bold text-sky-400 flex items-center gap-1">
+                  🌐 باز کردن در مرورگر
+                </button>
+                <button onclick="triggerStopFunnel()" id="btn-ts-funnel-stop" class="btn btn-danger text-xs px-3 py-1.5 font-bold">
+                  ⏹️ توقف Funnel
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-emerald-500/10 text-xs">
+              <div class="p-2 rounded-lg bg-[#0a0e17]/60 border border-white/5">
+                <span class="text-[10px] text-slate-400 block">پورت سرویس مقصد در سرور:</span>
+                <span id="ts-funnel-target-display" class="font-mono text-white font-bold">--</span>
+              </div>
+              <div class="p-2 rounded-lg bg-[#0a0e17]/60 border border-white/5">
+                <span class="text-[10px] text-slate-400 block">پورت عمومی اینترنت:</span>
+                <span id="ts-funnel-public-port-display" class="font-mono text-white font-bold">443 (HTTPS)</span>
+              </div>
+              <div class="p-2 rounded-lg bg-[#0a0e17]/60 border border-white/5">
+                <span class="text-[10px] text-slate-400 block">گواهی امنیتی SSL:</span>
+                <span class="font-mono text-emerald-400 font-bold">فعال (Let's Encrypt)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Inactive / Configuration Form Box -->
+          <div id="ts-funnel-config-box" class="p-4 rounded-xl bg-slate-900/50 border border-white/5 space-y-4">
+            <div class="text-xs text-slate-300 font-medium">تنظیم و انتشار پورت جدید روی اینترنت (Public Funnel):</div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <label class="block text-slate-400 text-[11px] mb-1">دستگاه مبدأ:</label>
+                <select id="ts-funnel-target-device" onchange="refreshTailscaleFunnelStatus(false)" class="w-full bg-[#0a0e17] border border-white/10 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-indigo-500">
+                  <option value="remote" selected>🐧 سرور لینوکس متصل (توصیه شده)</option>
+                  <option value="local">🪟 کلاینت محلی ویندوز</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-slate-400 text-[11px] mb-1">پورت داخلی سرویس (Local Port):</label>
+                <input type="number" id="ts-funnel-local-port" value="80" placeholder="مثلاً 80 یا 8080 یا 3000" class="w-full bg-[#0a0e17] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs outline-none focus:border-indigo-500">
+              </div>
+
+              <div>
+                <label class="block text-slate-400 text-[11px] mb-1">پورت عمومی اینترنت (Public Port):</label>
+                <select id="ts-funnel-public-port" class="w-full bg-[#0a0e17] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs outline-none focus:border-indigo-500">
+                  <option value="443" selected>443 (استاندارد HTTPS - بدون پورت در لینک)</option>
+                  <option value="8443">8443 (پورت اختصاصی HTTPS)</option>
+                  <option value="10000">10000 (پورت جانبی)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Quick Port Preset Chips -->
+            <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
+              <span class="text-slate-400 text-[10px]">پیشنهادهای سریع:</span>
+              <button type="button" onclick="setFunnelPortPreset(80)" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 font-mono text-[10px]">Port 80 (Apache / Nginx)</button>
+              <button type="button" onclick="setFunnelPortPreset(8080)" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 font-mono text-[10px]">Port 8080 (Docker / Web)</button>
+              <button type="button" onclick="setFunnelPortPreset(3000)" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 font-mono text-[10px]">Port 3000 (Node.js / React)</button>
+              <button type="button" onclick="setFunnelPortPreset(5000)" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-400 font-mono text-[10px]">Port 5000 (Python / Flask)</button>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-white/5">
+              <p class="text-[10px] text-slate-500">
+                🔒 ترافیک از سرورهای ابری تایل‌اسکیل با رمزنگاری TLS به این سیستم هدایت می‌شود.
+              </p>
+              <button onclick="triggerStartFunnel()" id="btn-ts-funnel-start" class="btn btn-primary text-xs px-5 py-2 font-bold bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1.5">
+                <span>⚡</span> فعال‌سازی و انتشار روی اینترنت
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ping & Diagnostic Tool -->
+        <div class="glass-panel p-5 space-y-3">
+          <h4 class="text-xs font-bold text-white flex items-center gap-2">
+            <span>📶 ابزار تست تاخیر و پینگ تایل‌اسکیل (Tailscale Ping)</span>
+          </h4>
+          <div class="flex flex-col sm:flex-row items-center gap-2">
+            <input type="text" id="ts-ping-target" placeholder="مثال: 100.x.y.z یا نام نود لینوکس" class="flex-1 bg-[#0a0e17] border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none focus:border-blue-500">
+            <button onclick="runTailscalePing()" id="btn-ts-run-ping" class="btn btn-primary text-xs px-5 py-2 font-bold whitespace-nowrap">
+              ارسال پینگ (Ping)
+            </button>
+          </div>
+          <div id="ts-ping-result-box" class="hidden p-3 rounded-xl bg-[#0a0e17] border border-white/10 font-mono text-xs text-slate-300 whitespace-pre-wrap ltr text-left"></div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: SERVERS MANAGER ================= -->
+      <section id="tab-servers" class="hidden space-y-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-bold text-white">مدیریت سرورها و پروفایل‌ها</h2>
+            <p class="text-xs text-slate-400">ذخیره، ویرایش، تست اتصال و حذف سرورهای لینوکسی</p>
+          </div>
+          <button onclick="openAddServerModal()" class="btn btn-primary text-xs px-4 py-2">
+            + افزودن سرور جدید
+          </button>
+        </div>
+
+        <div id="servers-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- Add / Edit Server Modal -->
+  <div id="modal-server" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-md p-6 bg-[#0a0e17]/95 border-white/15 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <h3 id="modal-server-title" class="font-bold text-white text-base">افزودن سرور لینوکس جدید</h3>
+        <button onclick="closeModal('modal-server')" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+
+      <input type="hidden" id="srv-form-id">
+
+      <div class="space-y-3.5 text-xs">
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">نام یا برچسب سرور</label>
+          <input type="text" id="srv-form-name" placeholder="مثلاً: لینوکس مینت، سرور داکر" class="w-full bg-slate-800/90 border border-white/10 rounded-xl px-3 py-2.5 text-white outline-none focus:border-blue-500">
+        </div>
+
+        <div class="grid grid-cols-3 gap-2.5">
+          <div class="col-span-2">
+            <label class="block text-slate-300 mb-1 font-medium">آدرس IP یا دامنه</label>
+            <input type="text" id="srv-form-host" placeholder="100.x.y.z یا 192.168.1.100" class="w-full bg-slate-800/90 border border-white/10 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-slate-300 mb-1 font-medium">پورت SSH</label>
+            <input type="number" id="srv-form-port" value="22" class="w-full bg-slate-800/90 border border-white/10 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-blue-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">نام کاربری لینوکس</label>
+          <input type="text" id="srv-form-user" value="root" placeholder="root یا ubuntu یا نام کاربری مینت" class="w-full bg-slate-800/90 border border-white/10 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-blue-500">
+        </div>
+
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">نوع احراز هویت</label>
+          <select id="srv-form-auth-type" onchange="toggleAuthFields()" class="w-full bg-slate-800/90 border border-white/10 rounded-xl px-3 py-2.5 text-white outline-none focus:border-blue-500">
+            <option value="password">رمز عبور (Password)</option>
+            <option value="key">کلید اختصاصی SSH (Private Key)</option>
+          </select>
+        </div>
+
+        <div id="auth-field-password">
+          <label class="block text-slate-300 mb-1 font-medium">کلمه عبور SSH</label>
+          <input type="password" id="srv-form-pass" placeholder="••••••••" class="w-full bg-slate-800/90 border border-white/10 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-blue-500">
+        </div>
+
+        <div id="auth-field-key" class="hidden">
+          <label class="block text-slate-300 mb-1 font-medium">مسیر فایل Private Key (id_rsa / id_ed25519)</label>
+          <input type="text" id="srv-form-key" placeholder="C:\Users\username\.ssh\id_rsa" class="w-full bg-slate-800/90 border border-white/10 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-blue-500">
+        </div>
+
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">مک آدرس برای روشن کردن از راه دور (اختیاری):</label>
+          <input type="text" id="srv-form-mac" placeholder="AA:BB:CC:DD:EE:FF" class="w-full bg-slate-800/90 border border-white/10 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-blue-500">
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-white/10">
+        <button type="button" onclick="testConnectionFromModal()" id="btn-modal-test-conn" class="btn btn-secondary text-xs px-3 py-2">
+          🧪 تست اتصال
+        </button>
+        <div class="flex items-center gap-2">
+          <button onclick="closeModal('modal-server')" class="btn btn-outline text-xs px-4 py-2">انصراف</button>
+          <button onclick="saveServerForm()" class="btn btn-primary text-xs px-5 py-2">ذخیره سرور</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- In-App Code/Text File Editor Modal -->
+  <div id="modal-file-editor" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-4xl h-[85vh] p-6 bg-[#0a0e17]/95 border-white/15 flex flex-col space-y-3 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div>
+          <h3 id="file-editor-title" class="font-bold text-white text-sm font-mono truncate max-w-lg">ویرایش فایل</h3>
+          <span id="file-editor-subtitle" class="text-[10px] text-slate-400 font-mono"></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="saveCurrentEditingFile()" id="btn-save-file" class="btn btn-primary text-xs px-4 py-1.5 font-bold">
+            💾 ذخیره فایل (Save)
+          </button>
+          <button onclick="closeModal('modal-file-editor')" class="text-slate-400 hover:text-white text-sm">✕</button>
+        </div>
+      </div>
+      <input type="hidden" id="file-editor-current-path">
+      <textarea id="file-editor-content" class="flex-1 w-full bg-[#03060d] border border-white/10 rounded-xl p-3 text-xs font-mono text-slate-200 outline-none focus:border-blue-500 leading-relaxed resize-none"></textarea>
+    </div>
+  </div>
+
+  
+
+  <!-- Custom Delete Confirmation Modal -->
+  <div id="modal-confirm-delete" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-sm p-6 bg-[#0a0e17]/95 border-rose-500/30 space-y-4 shadow-2xl text-center">
+      <div class="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-400 flex items-center justify-center mx-auto border border-rose-500/20">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+      </div>
+      <div>
+        <h3 class="font-bold text-white text-base mb-1">حذف آیتم</h3>
+        <p class="text-xs text-slate-400" id="confirm-delete-msg">آیا از حذف اطمینان دارید؟</p>
+      </div>
+      <input type="hidden" id="delete-target-id">
+      <input type="hidden" id="delete-target-type">
+      <div class="flex items-center justify-center gap-2.5 pt-2">
+        <button onclick="closeModal('modal-confirm-delete')" class="btn btn-outline text-xs px-4 py-2">انصراف</button>
+        <button onclick="confirmExecuteDelete()" class="btn btn-danger text-xs px-5 py-2">بله، حذف کن</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Container Logs Modal -->
+  <div id="modal-logs" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-3xl h-[80vh] p-6 bg-[#0a0e17]/95 border-white/10 flex flex-col space-y-3 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="flex items-center gap-2">
+          <span class="status-beacon online"></span>
+          <h3 id="logs-modal-title" class="font-bold text-white text-sm font-mono">Logs</h3>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="refreshCurrentLogs()" class="btn btn-outline text-xs px-3 py-1">بروزرسانی لاگ</button>
+          <button onclick="closeModal('modal-logs')" class="text-slate-400 hover:text-white text-sm">✕</button>
+        </div>
+      </div>
+      <div id="container-logs-content" class="log-terminal flex-1 text-xs">در حال دریافت لاگ‌ها...</div>
+    </div>
+  </div>
+
+  <!-- Modal: Run Docker Container -->
+  <div id="modal-run-container" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-lg p-6 bg-[#0a0e17]/95 border-white/10 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <h3 class="font-bold text-white text-base flex items-center gap-2">
+          <span class="text-blue-400">🚀</span> اجرای کانتینر جدید در داکر
+        </h3>
+        <button onclick="closeModal('modal-run-container')" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">ایمیج داکر (Image Name):</label>
+          <div class="flex gap-2">
+            <input type="text" id="run-container-image" placeholder="مثال: nginx:alpine یا python:3.11 یا انتخاب از لیست" class="flex-1 bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-blue-500">
+            <button type="button" onclick="loadImagesIntoRunDropdown()" class="btn btn-secondary text-xs px-2.5 py-1" title="انتخاب از ایمیج‌های موجود در سرور">
+              📦 لیست
+            </button>
+          </div>
+          <select id="run-container-existing-images" onchange="onExistingImageSelected()" class="hidden w-full mt-2 bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-slate-300 font-mono text-xs outline-none">
+            <option value="">-- انتخاب یک ایمیج موجود در لینوکس --</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">نام کانتینر (اختیاری):</label>
+          <input type="text" id="run-container-name" placeholder="مثال: my-web-app" class="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-blue-500">
+          <label class="flex items-center gap-2 cursor-pointer select-none text-[11px] text-slate-400 hover:text-slate-200 mt-1.5">
+            <input type="checkbox" id="run-container-replace-existing" class="rounded bg-slate-900 border-white/20 text-blue-500 focus:ring-0">
+            <span>در صورت وجود کانتینری با همین نام، کانتینر قبلی حذف و جایگزین شود (جلوگیری از خطای Conflict)</span>
+          </label>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-slate-300 font-medium">نگاشت پورت‌ها (Port Mapping):</label>
+            <button type="button" onclick="addPortMappingRow()" class="text-xs text-sky-400 hover:text-white flex items-center gap-1 font-sans">
+              <span>➕ افزودن پورت دیگر</span>
+            </button>
+          </div>
+
+          <!-- Port Mapping Rows Container -->
+          <div id="port-mappings-list" class="space-y-2">
+            <div class="port-mapping-row flex items-center gap-2 bg-slate-800/80 p-2.5 rounded-xl border border-white/5">
+              <div class="flex-1">
+                <label class="block text-[10px] text-slate-400 mb-0.5">پورت دستگاه (Host / Server)</label>
+                <input type="number" class="host-port-input w-full bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-white font-mono text-xs outline-none focus:border-blue-500" placeholder="مثلاً: 8080" min="1" max="65535">
+              </div>
+
+              <div class="text-slate-500 pt-3 flex flex-col items-center">
+                <span class="text-xs">➔</span>
+              </div>
+
+              <div class="flex-1">
+                <label class="block text-[10px] text-slate-400 mb-0.5">پورت کانتینر (Container)</label>
+                <input type="number" class="container-port-input w-full bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1.5 text-white font-mono text-xs outline-none focus:border-blue-500" placeholder="مثلاً: 80" min="1" max="65535">
+              </div>
+
+              <div class="w-20">
+                <label class="block text-[10px] text-slate-400 mb-0.5">پروتکل</label>
+                <select class="protocol-select w-full bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-slate-300 font-mono text-xs outline-none">
+                  <option value="tcp">TCP</option>
+                  <option value="udp">UDP</option>
+                </select>
+              </div>
+
+              <button type="button" onclick="removePortMappingRow(this)" class="text-slate-500 hover:text-rose-400 p-1 pt-3.5" title="حذف این پورت">✕</button>
+            </div>
+          </div>
+
+          <!-- Quick Presets -->
+          <div class="flex flex-wrap items-center gap-1.5 pt-2 text-[10px] text-slate-400">
+            <span>پورت‌های آماده:</span>
+            <button type="button" onclick="setQuickPortMapping(80, 80)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-white/5">80 ➔ 80</button>
+            <button type="button" onclick="setQuickPortMapping(8080, 80)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-300 font-mono border border-white/5 font-bold">8080 ➔ 80 (Web)</button>
+            <button type="button" onclick="setQuickPortMapping(443, 443)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-white/5">443 (SSL)</button>
+            <button type="button" onclick="setQuickPortMapping(3306, 3306)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-white/5">3306 (MySQL)</button>
+            <button type="button" onclick="setQuickPortMapping(5432, 5432)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-white/5">5432 (Postgres)</button>
+            <button type="button" onclick="setQuickPortMapping(6379, 6379)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-white/5">6379 (Redis)</button>
+            <button type="button" onclick="setQuickPortMapping(9000, 9000)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-white/5">9000 (Portainer)</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-slate-300 font-medium">متغیرهای محیطی (Environment Variables):</label>
+            <button type="button" onclick="appendEnvVar('run-container-env', 'DB_HOST=172.17.0.1')" class="text-[10px] text-sky-400 hover:text-white flex items-center gap-1 font-mono transition" title="درج متغیر اتصال به دیتابیس لوکال سرور">
+              <span>➕ DB_HOST=172.17.0.1</span>
+            </button>
+          </div>
+          <textarea id="run-container-env" rows="2" placeholder="ENV_VAR=value&#10;DEBUG=true&#10;DB_HOST=172.17.0.1" class="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-white font-mono outline-none focus:border-blue-500 text-xs resize-none"></textarea>
+          
+          <!-- Guide for Connecting to Host / Database -->
+          <div class="mt-1.5 p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[11px] flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-amber-400 text-sm">💡</span>
+              <span class="text-slate-300">
+                اتصال کانتینر به دیتابیس هاست: به جای <code class="text-rose-300 font-mono">localhost</code> از آی‌پی <code class="text-sky-300 font-mono font-bold bg-slate-900/80 px-1.5 py-0.5 rounded">172.17.0.1</code> استفاده کنید.
+              </span>
+            </div>
+            <button type="button" onclick="copyToClipboard('172.17.0.1')" class="btn btn-secondary text-[10px] px-2 py-0.5 text-sky-400 font-mono hover:text-white shrink-0 flex items-center gap-1" title="کپی آی‌پی دروازه داکر">
+              📋 کپی IP
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">سیاست راه‌اندازی مجدد (Restart Policy):</label>
+          <select id="run-container-restart" class="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-slate-300 outline-none">
+            <option value="unless-stopped">Unless Stopped (پیش‌فرض پیشنهادی)</option>
+            <option value="always">Always (همیشه)</option>
+            <option value="on-failure">On Failure (فقط در صورت خطا)</option>
+            <option value="no">No (بدون ریستارت خودکار)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+        <button onclick="closeModal('modal-run-container')" class="btn btn-outline text-xs px-4 py-2">انصراف</button>
+        <button onclick="executeRunContainer()" id="btn-submit-run-container" class="btn btn-primary text-xs px-5 py-2">
+          🚀 استارت کانتینر
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Docker Container -->
+  <div id="modal-edit-container" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-lg p-6 bg-[#0a0e17]/95 border-white/10 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <h3 class="font-bold text-white text-base flex items-center gap-2">
+          <span class="text-amber-400">✏️</span> ویرایش و تنظیم کانتینر داکر
+        </h3>
+        <button onclick="closeModal('modal-edit-container')" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+
+      <input type="hidden" id="edit-container-id">
+
+      <!-- Image & Status Meta -->
+      <div class="glass-panel p-2.5 bg-slate-800/40 border-white/5 flex items-center justify-between text-xs">
+        <div>
+          <span class="text-slate-400 text-[10px] block">ایمیج پایه کانتینر:</span>
+          <span id="edit-container-image-badge" class="font-mono text-white font-bold text-xs"></span>
+        </div>
+        <span id="edit-container-status-badge"></span>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">نام کانتینر (Container Name):</label>
+          <input type="text" id="edit-container-name" class="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-amber-500">
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-slate-300 font-medium">نگاشت پورت‌ها (Port Forwarding):</label>
+            <button type="button" onclick="addEditPortMappingRow()" class="text-xs text-sky-400 hover:text-white flex items-center gap-1 font-sans">
+              <span>➕ افزودن پورت دیگر</span>
+            </button>
+          </div>
+
+          <div id="edit-port-mappings-list" class="space-y-2">
+            <!-- Rows dynamically populated -->
+          </div>
+
+          <!-- Quick Presets -->
+          <div class="flex flex-wrap items-center gap-1.5 pt-2 text-[10px] text-slate-400">
+            <span>پورت‌های آماده:</span>
+            <button type="button" onclick="setQuickEditPortMapping(80, 80)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-white/5">80 ➔ 80</button>
+            <button type="button" onclick="setQuickEditPortMapping(8080, 80)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-300 font-mono border border-white/5 font-bold">8080 ➔ 80 (Web)</button>
+            <button type="button" onclick="setQuickEditPortMapping(443, 443)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-white/5">443 (SSL)</button>
+            <button type="button" onclick="setQuickEditPortMapping(3306, 3306)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-white/5">3306 (MySQL)</button>
+            <button type="button" onclick="setQuickEditPortMapping(5432, 5432)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-white/5">5432 (Postgres)</button>
+            <button type="button" onclick="setQuickEditPortMapping(6379, 6379)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-white/5">6379 (Redis)</button>
+            <button type="button" onclick="setQuickEditPortMapping(9000, 9000)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-white/5">9000 (Portainer)</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-slate-300 font-medium">متغیرهای محیطی (Environment Variables):</label>
+            <button type="button" onclick="appendEnvVar('edit-container-env', 'DB_HOST=172.17.0.1')" class="text-[10px] text-amber-400 hover:text-white flex items-center gap-1 font-mono transition" title="درج متغیر اتصال به دیتابیس لوکال سرور">
+              <span>➕ DB_HOST=172.17.0.1</span>
+            </button>
+          </div>
+          <textarea id="edit-container-env" rows="2" placeholder="ENV_VAR=value&#10;DEBUG=true&#10;DB_HOST=172.17.0.1" class="w-full bg-slate-800 border border-white/10 rounded-xl p-2.5 text-white font-mono outline-none focus:border-amber-500 text-xs resize-none"></textarea>
+          
+          <!-- Guide for Connecting to Host / Database -->
+          <div class="mt-1.5 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-amber-400 text-sm">💡</span>
+              <span class="text-slate-300">
+                اتصال کانتینر به دیتابیس هاست: به جای <code class="text-rose-300 font-mono">localhost</code> از آی‌پی <code class="text-amber-300 font-mono font-bold bg-slate-900/80 px-1.5 py-0.5 rounded">172.17.0.1</code> استفاده کنید.
+              </span>
+            </div>
+            <button type="button" onclick="copyToClipboard('172.17.0.1')" class="btn btn-secondary text-[10px] px-2 py-0.5 text-amber-400 font-mono hover:text-white shrink-0 flex items-center gap-1" title="کپی آی‌پی دروازه داکر">
+              📋 کپی IP
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">سیاست راه‌اندازی مجدد (Restart Policy):</label>
+          <select id="edit-container-restart" class="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-slate-300 outline-none">
+            <option value="unless-stopped">Unless Stopped (پیش‌فرض)</option>
+            <option value="always">Always (همیشه)</option>
+            <option value="on-failure">On Failure (در صورت خطا)</option>
+            <option value="no">No (بدون ریستارت)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Helpful Notice -->
+      <div class="text-[11px] text-slate-400 bg-amber-500/10 border border-amber-500/20 rounded-xl p-2.5 flex items-start gap-2">
+        <span>💡</span>
+        <span>تغییر نام کانتینر بلافاصله و بدون توقف انجام می‌شود. در صورت تغییر پورت‌ها، کانتینر به صورت هوشمند با تنظیمات جدید بازسازی (Recreate) و اجرا می‌گردد.</span>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+        <button onclick="closeModal('modal-edit-container')" class="btn btn-outline text-xs px-4 py-2">انصراف</button>
+        <button onclick="submitEditContainer()" id="btn-submit-edit-container" class="btn btn-primary text-xs px-5 py-2 bg-amber-600 hover:bg-amber-500 border-none text-slate-900 font-bold">
+          💾 ذخیره و اعمال تغییرات
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Docker Images List -->
+  <div id="modal-docker-images" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-3xl max-h-[85vh] p-6 bg-[#0a0e17]/95 border-white/10 flex flex-col space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="flex items-center gap-2">
+          <span class="text-blue-400 text-base">📦</span>
+          <h3 class="font-bold text-white text-base">ایمیج‌های موجود در سیستم لینوکسی</h3>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="promptLoadFileIntoDocker()" class="btn btn-secondary text-xs px-3 py-1.5 flex items-center gap-1 border-blue-500/30 text-blue-300 hover:text-white" title="بارگذاری ایمیج از فایل یا فایل ایزو موجود در سرور">
+            <span>🐳 بارگذاری از فایل / ایزو</span>
+          </button>
+          <button onclick="openPullImagePrompt()" class="btn btn-primary text-xs px-3 py-1.5 flex items-center gap-1">
+            <span>⬇️ دریافت ایمیج (docker pull)</span>
+          </button>
+          <button onclick="refreshDockerImagesList()" class="btn btn-outline text-xs px-2.5 py-1.5" title="بروزرسانی">🔄</button>
+          <button onclick="closeModal('modal-docker-images')" class="text-slate-400 hover:text-white text-sm">✕</button>
+        </div>
+      </div>
+
+      <div class="overflow-y-auto flex-1">
+        <table class="w-full text-right text-xs">
+          <thead class="text-slate-400 bg-slate-800/40 border-b border-white/5 uppercase font-mono text-[11px] sticky top-0 bg-slate-900">
+            <tr>
+              <th class="py-2.5 px-3">مخزن و تگ (Repository:Tag)</th>
+              <th class="py-2.5 px-3">حجم</th>
+              <th class="py-2.5 px-3">تاریخ ساخت</th>
+              <th class="py-2.5 px-3 text-center">عملیات</th>
+            </tr>
+          </thead>
+          <tbody id="docker-images-tbody" class="divide-y divide-white/5">
+            <tr><td colspan="4" class="py-6 text-center text-slate-500">در حال بارگذاری ایمیج‌ها...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Docker Startup & Auto-Start Management -->
+  <div id="modal-docker-startup" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-4xl max-h-[88vh] p-6 bg-[#0a0e17]/95 border-white/10 flex flex-col space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="flex items-center gap-2">
+          <span class="text-amber-400 text-lg">⚙️</span>
+          <div>
+            <h3 class="font-bold text-white text-base">مدیریت استارت‌آپ و بوت کانتینرهای داکر</h3>
+            <p class="text-xs text-slate-400">تنظیم راه‌اندازی خودکار کانتینرها و سرویس داکر هنگام روشن شدن سیستم لینوکس</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="refreshDockerStartupStatus()" class="btn btn-outline text-xs px-2.5 py-1.5" title="بروزرسانی">🔄</button>
+          <button onclick="closeModal('modal-docker-startup')" class="text-slate-400 hover:text-white text-sm">✕</button>
+        </div>
+      </div>
+
+      <!-- Top Daemon & Stats Card -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <!-- Service Boot Status -->
+        <div class="glass-panel p-3 bg-slate-800/40 border-white/5 flex items-center justify-between">
+          <div>
+            <div class="text-[11px] text-slate-400">سرویس داکر در بوت سیستم</div>
+            <div id="docker-service-boot-status" class="text-xs font-bold text-slate-300 font-mono mt-0.5">در حال بررسی...</div>
+          </div>
+          <button id="btn-toggle-docker-service-boot" onclick="toggleDockerServiceBoot()" class="btn btn-secondary text-xs px-2.5 py-1 text-slate-300">
+            تغییر
+          </button>
+        </div>
+
+        <!-- Containers Autostart Stats -->
+        <div class="glass-panel p-3 bg-slate-800/40 border-white/5">
+          <div class="text-[11px] text-slate-400">کانتینرهای دارای استارت‌آپ</div>
+          <div class="text-base font-bold text-emerald-400 font-mono mt-0.5 flex items-center gap-1.5">
+            <span id="docker-startup-count">0</span>
+            <span class="text-xs text-slate-500 font-normal">از</span>
+            <span id="docker-startup-total">0</span>
+          </div>
+        </div>
+
+        <!-- Batch Quick Actions -->
+        <div class="glass-panel p-3 bg-slate-800/40 border-white/5 flex items-center justify-center gap-1.5">
+          <button onclick="setAllContainersStartupPolicy('unless-stopped')" class="btn btn-secondary text-[11px] px-2.5 py-1.5 text-emerald-400 border-emerald-500/20 font-bold" title="همه کانتینرها با روشن شدن سیستم بالا بیایند">
+            ⚡ همه خودکار (Auto)
+          </button>
+          <button onclick="setAllContainersStartupPolicy('no')" class="btn btn-secondary text-[11px] px-2.5 py-1.5 text-rose-400 border-rose-500/20 font-bold" title="هیچ کانتینری به صورت خودکار اجرا نشود">
+            ⛔ لغو همه (No Auto)
+          </button>
+        </div>
+      </div>
+
+      <!-- Explanatory Alert -->
+      <div class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300/90 flex items-start gap-2">
+        <span class="text-sm">💡</span>
+        <div class="leading-relaxed">
+          <strong>سیاست‌های راه‌اندازی (Restart Policies):</strong>
+          <span class="text-slate-300 mr-1"><b class="text-emerald-400">unless-stopped:</b> همیشه با بوت بالا می‌آید مگر اینکه کاربر آن را دستی Stop کند (توصیه شده).</span>
+          <span class="text-slate-300 mr-1"><b class="text-sky-400">always:</b> در هر شرایطی با بوت لینوکس و استارت داکر روشن می‌شود.</span>
+          <span class="text-slate-300 mr-1"><b class="text-slate-400">no:</b> با روشن شدن سیستم اجرا نمی‌شود و دستی باید استارت شود.</span>
+        </div>
+      </div>
+
+      <!-- Containers Table -->
+      <div class="overflow-y-auto flex-1 glass-panel border-white/5">
+        <table class="w-full text-right text-xs">
+          <thead class="text-slate-400 bg-slate-800/60 border-b border-white/5 uppercase font-mono text-[11px] sticky top-0 bg-slate-900 z-10">
+            <tr>
+              <th class="py-2.5 px-3">شناسه و نام کانتینر</th>
+              <th class="py-2.5 px-3">ایمیج</th>
+              <th class="py-2.5 px-3">وضعیت فعلی</th>
+              <th class="py-2.5 px-3">راه‌اندازی در بوت</th>
+              <th class="py-2.5 px-3 text-center">سیاست استارت‌آپ (Restart Policy)</th>
+            </tr>
+          </thead>
+          <tbody id="docker-startup-tbody" class="divide-y divide-white/5 font-mono">
+            <tr><td colspan="5" class="py-8 text-center text-slate-500 font-sans">در حال استعلام وضعیت استارت‌آپ کانتینرها...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Docker Hub & Iranian Registry Mirrors -->
+  <div id="modal-docker-hub" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-4xl max-h-[88vh] p-6 bg-[#0a0e17]/95 border-white/10 flex flex-col space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="flex items-center gap-2">
+          <span class="text-sky-400 text-lg">🌐</span>
+          <div>
+            <h3 class="font-bold text-white text-base">داکر هاب، کاتالوگ و میرورهای تحریم‌شکن</h3>
+            <p class="text-xs text-slate-400">جستجو در Docker Hub، دانلود اپلیکیشن‌های آماده با ۱ کلیک و رفع تحریم داکر در ایران</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-docker-hub')" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+
+      <!-- Sub Tabs -->
+      <div class="flex items-center gap-2 border-b border-white/10 pb-2 text-xs">
+        <button onclick="switchDockerHubSubTab('search')" id="hub-tab-btn-search" class="px-4 py-1.5 rounded-xl font-bold bg-blue-600 text-white transition">
+          🔍 جستجو در داکر هاب و کاتالوگ
+        </button>
+        <button onclick="switchDockerHubSubTab('mirrors')" id="hub-tab-btn-mirrors" class="px-4 py-1.5 rounded-xl font-medium text-slate-400 hover:text-white transition">
+          ⚡ میرورهای تحریم‌شکن (Registry Mirrors)
+        </button>
+      </div>
+
+      <!-- Tab 1: Hub Search & Quick Catalog -->
+      <div id="hub-subtab-search" class="flex-1 flex flex-col space-y-4 overflow-y-auto">
+        <!-- Search bar -->
+        <div class="flex items-center gap-2">
+          <div class="relative flex-1">
+            <span class="absolute right-3 top-2.5 text-slate-500 text-xs font-mono">🔍</span>
+            <input type="text" id="docker-hub-search-input" onkeydown="if(event.key==='Enter') executeDockerHubSearch()" placeholder="جستجوی ایمیج در Docker Hub (مثلاً: redis, nginx, postgres, python)..." class="w-full bg-[#0d131f] border border-white/10 rounded-xl pr-9 pl-3 py-2 text-xs text-white outline-none focus:border-blue-500 font-mono">
+          </div>
+          <button onclick="executeDockerHubSearch()" id="btn-docker-hub-search" class="btn btn-primary text-xs px-4 py-2">
+            جستجو در هاب
+          </button>
+        </div>
+
+        <!-- 1-Click Popular Apps Catalog -->
+        <div>
+          <div class="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5">
+            <span>🔥 محبوب‌ترین اپلیکیشن‌ها و سرویس‌ها (نصب و اجرای ۱ کلیک):</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+            <!-- Nginx -->
+            <div class="glass-panel p-2.5 bg-slate-800/40 border-white/5 hover:border-blue-500/30 transition flex flex-col justify-between">
+              <div>
+                <div class="font-bold text-white text-xs flex items-center justify-between">
+                  <span>Nginx</span>
+                  <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400">Web</span>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1 line-clamp-1">وب‌سرور سبک و پرسرعت و Reverse Proxy</p>
+              </div>
+              <div class="mt-2.5 flex items-center gap-1">
+                <button onclick="quickPullImage('nginx:alpine')" class="btn btn-secondary text-[10px] px-2 py-1 flex-1 text-sky-400">⬇️ Pull</button>
+                <button onclick="quickRunPreset('nginx:alpine', 'my-nginx', '80:80')" class="btn btn-primary text-[10px] px-2 py-1 flex-1">🚀 Run</button>
+              </div>
+            </div>
+
+            <!-- Redis -->
+            <div class="glass-panel p-2.5 bg-slate-800/40 border-white/5 hover:border-blue-500/30 transition flex flex-col justify-between">
+              <div>
+                <div class="font-bold text-white text-xs flex items-center justify-between">
+                  <span>Redis</span>
+                  <span class="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400">Cache</span>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1 line-clamp-1">پایگاه داده In-Memory و کش سریع</p>
+              </div>
+              <div class="mt-2.5 flex items-center gap-1">
+                <button onclick="quickPullImage('redis:alpine')" class="btn btn-secondary text-[10px] px-2 py-1 flex-1 text-sky-400">⬇️ Pull</button>
+                <button onclick="quickRunPreset('redis:alpine', 'my-redis', '6379:6379')" class="btn btn-primary text-[10px] px-2 py-1 flex-1">🚀 Run</button>
+              </div>
+            </div>
+
+            <!-- MySQL -->
+            <div class="glass-panel p-2.5 bg-slate-800/40 border-white/5 hover:border-blue-500/30 transition flex flex-col justify-between">
+              <div>
+                <div class="font-bold text-white text-xs flex items-center justify-between">
+                  <span>MySQL 8</span>
+                  <span class="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400">Database</span>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1 line-clamp-1">دیتابیس رابطه‌ای محبوب</p>
+              </div>
+              <div class="mt-2.5 flex items-center gap-1">
+                <button onclick="quickPullImage('mysql:8.0')" class="btn btn-secondary text-[10px] px-2 py-1 flex-1 text-sky-400">⬇️ Pull</button>
+                <button onclick="quickRunPreset('mysql:8.0', 'my-mysql', '3306:3306', 'MYSQL_ROOT_PASSWORD=secret')" class="btn btn-primary text-[10px] px-2 py-1 flex-1">🚀 Run</button>
+              </div>
+            </div>
+
+            <!-- PostgreSQL -->
+            <div class="glass-panel p-2.5 bg-slate-800/40 border-white/5 hover:border-blue-500/30 transition flex flex-col justify-between">
+              <div>
+                <div class="font-bold text-white text-xs flex items-center justify-between">
+                  <span>PostgreSQL</span>
+                  <span class="text-[9px] px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400">Database</span>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1 line-clamp-1">دیتابیس پیشرفته منبع‌باز</p>
+              </div>
+              <div class="mt-2.5 flex items-center gap-1">
+                <button onclick="quickPullImage('postgres:16-alpine')" class="btn btn-secondary text-[10px] px-2 py-1 flex-1 text-sky-400">⬇️ Pull</button>
+                <button onclick="quickRunPreset('postgres:16-alpine', 'my-postgres', '5432:5432', 'POSTGRES_PASSWORD=secret')" class="btn btn-primary text-[10px] px-2 py-1 flex-1">🚀 Run</button>
+              </div>
+            </div>
+
+            <!-- MongoDB -->
+            <div class="glass-panel p-2.5 bg-slate-800/40 border-white/5 hover:border-blue-500/30 transition flex flex-col justify-between">
+              <div>
+                <div class="font-bold text-white text-xs flex items-center justify-between">
+                  <span>MongoDB</span>
+                  <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400">NoSQL</span>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1 line-clamp-1">دیتابیس اسنادی NoSQL</p>
+              </div>
+              <div class="mt-2.5 flex items-center gap-1">
+                <button onclick="quickPullImage('mongo:latest')" class="btn btn-secondary text-[10px] px-2 py-1 flex-1 text-sky-400">⬇️ Pull</button>
+                <button onclick="quickRunPreset('mongo:latest', 'my-mongo', '27017:27017')" class="btn btn-primary text-[10px] px-2 py-1 flex-1">🚀 Run</button>
+              </div>
+            </div>
+
+            <!-- Portainer -->
+            <div class="glass-panel p-2.5 bg-slate-800/40 border-white/5 hover:border-blue-500/30 transition flex flex-col justify-between">
+              <div>
+                <div class="font-bold text-white text-xs flex items-center justify-between">
+                  <span>Portainer</span>
+                  <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400">Dashboard</span>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1 line-clamp-1">داشبورد تحت وب مدیریت داکر</p>
+              </div>
+              <div class="mt-2.5 flex items-center gap-1">
+                <button onclick="quickPullImage('portainer/portainer-ce:latest')" class="btn btn-secondary text-[10px] px-2 py-1 flex-1 text-sky-400">⬇️ Pull</button>
+                <button onclick="quickRunPreset('portainer/portainer-ce:latest', 'portainer', '9000:9000')" class="btn btn-primary text-[10px] px-2 py-1 flex-1">🚀 Run</button>
+              </div>
+            </div>
+
+            <!-- WordPress -->
+            <div class="glass-panel p-2.5 bg-slate-800/40 border-white/5 hover:border-blue-500/30 transition flex flex-col justify-between">
+              <div>
+                <div class="font-bold text-white text-xs flex items-center justify-between">
+                  <span>WordPress</span>
+                  <span class="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400">CMS</span>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1 line-clamp-1" title="متصل به دیتابیس لوکال 172.17.0.1:3306">وردپرس (متصل به دیتابیس 172.17.0.1)</p>
+              </div>
+              <div class="mt-2.5 flex items-center gap-1">
+                <button onclick="quickPullImage('wordpress:latest')" class="btn btn-secondary text-[10px] px-2 py-1 flex-1 text-sky-400">⬇️ Pull</button>
+                <button onclick="quickRunPreset('wordpress:latest', 'my-wp', '8080:80', 'WORDPRESS_DB_HOST=172.17.0.1:3306\nWORDPRESS_DB_USER=root\nWORDPRESS_DB_PASSWORD=root')" class="btn btn-primary text-[10px] px-2 py-1 flex-1" title="اجرای وردپرس با پورت 8080 و متصل به دیتابیس هاست">🚀 Run</button>
+              </div>
+            </div>
+
+            <!-- Python 3 -->
+            <div class="glass-panel p-2.5 bg-slate-800/40 border-white/5 hover:border-blue-500/30 transition flex flex-col justify-between">
+              <div>
+                <div class="font-bold text-white text-xs flex items-center justify-between">
+                  <span>Python 3.11</span>
+                  <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400">Dev</span>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1 line-clamp-1">محیط رسمی اجرای پایتون ۳</p>
+              </div>
+              <div class="mt-2.5 flex items-center gap-1">
+                <button onclick="quickPullImage('python:3.11-slim')" class="btn btn-secondary text-[10px] px-2 py-1 flex-1 text-sky-400">⬇️ Pull</button>
+                <button onclick="quickRunPreset('python:3.11-slim', 'my-python', '')" class="btn btn-primary text-[10px] px-2 py-1 flex-1">🚀 Run</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search Results Table -->
+        <div class="flex-1 glass-panel border-white/5 overflow-hidden flex flex-col min-h-[220px]">
+          <div class="p-2.5 bg-slate-800/40 border-b border-white/5 text-xs font-bold text-slate-300 flex items-center justify-between">
+            <span>نتایج جستجو از Docker Hub:</span>
+            <span id="hub-search-meta" class="text-slate-400 font-mono text-[11px]"></span>
+          </div>
+          <div class="overflow-y-auto flex-1">
+            <table class="w-full text-right text-xs">
+              <thead class="text-slate-400 bg-slate-800/60 uppercase font-mono text-[11px] sticky top-0 bg-slate-900 z-10 border-b border-white/5">
+                <tr>
+                  <th class="py-2.5 px-3">نام ایمیج (Repository)</th>
+                  <th class="py-2.5 px-3">محبوبیت (Stars)</th>
+                  <th class="py-2.5 px-3">رسمی</th>
+                  <th class="py-2.5 px-3">توضیحات</th>
+                  <th class="py-2.5 px-3 text-center">عملیات</th>
+                </tr>
+              </thead>
+              <tbody id="docker-hub-results-tbody" class="divide-y divide-white/5">
+                <tr><td colspan="5" class="py-8 text-center text-slate-500 font-sans">برای جستجو در داکر هاب عبارت دلخواه خود را در کادر بالا وارد کنید.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Registry Mirrors -->
+      <div id="hub-subtab-mirrors" class="hidden flex-1 flex flex-col space-y-4 overflow-y-auto">
+        <!-- Explanation Alert -->
+        <div class="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 text-xs text-sky-200 flex items-start gap-2.5">
+          <span class="text-base">🛡️</span>
+          <div class="leading-relaxed">
+            <strong>رفع تحریم و فیلترینگ داکر در ایران با رجیستری میرور:</strong>
+            <p class="text-slate-300 text-[11px] mt-0.5">
+              به علت مسدودسازی مخزن جهانی داکر هاب روی آی‌پی‌های ایران، دانلود ایمیج‌ها با خطا مواجه می‌شود. فعال‌سازی میرورهای معتبر داخلی زیر درخواست‌ها را از سرورهای کش ایران عبور داده و سرعت دانلود را تا چند برابر افزایش می‌دهد.
+            </p>
+          </div>
+        </div>
+
+        <!-- Preset Mirrors List -->
+        <div class="space-y-2">
+          <div class="text-xs font-bold text-white flex items-center justify-between">
+            <span>میرورهای پیشنهادی تحریم‌شکن (انتخاب و فعال‌سازی):</span>
+            <button onclick="testAllMirrorsLatency()" class="text-[11px] text-sky-400 hover:underline font-mono">⚡ تست لتنسی همه</button>
+          </div>
+
+          <div id="docker-mirrors-list" class="space-y-2">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Custom Mirror Input -->
+        <div class="glass-panel p-3 bg-slate-800/40 border-white/5 space-y-2">
+          <div class="text-xs font-bold text-slate-300">افزودن آدرس میرور دلخواه:</div>
+          <div class="flex items-center gap-2">
+            <input type="text" id="custom-mirror-url" placeholder="https://my-private-registry.example.com" class="flex-1 bg-[#0d131f] border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500 font-mono">
+            <button onclick="addCustomMirrorRow()" class="btn btn-secondary text-xs px-3 py-2">
+              ➕ افزودن
+            </button>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-between pt-2 border-t border-white/10">
+          <div class="text-[11px] text-slate-400">
+            پس از ذخیره، فایل <code class="text-sky-300">/etc/docker/daemon.json</code> بروزرسانی و داکر ری‌استارت خواهد شد.
+          </div>
+          <button onclick="saveRegistryMirrorsConfig()" id="btn-save-mirrors" class="btn btn-primary text-xs px-5 py-2 shadow-lg">
+            💾 ذخیره و اعمال میرورها
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Docker Image Downloads & Queue -->
+  <div id="modal-docker-downloads" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-4xl max-h-[88vh] p-6 bg-[#0a0e17]/95 border-white/10 flex flex-col space-y-4 shadow-2xl">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="flex items-center gap-2.5">
+          <span class="text-emerald-400 text-xl">⬇️</span>
+          <div>
+            <h3 class="font-bold text-white text-base flex items-center gap-2">
+              <span>صف و مدیریت دانلود ایمیج‌های داکر</span>
+              <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-medium">
+                🌐 دانلود مستقیم روی لینوکس (با اینترنت سیستم لینوکسی)
+              </span>
+            </h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">
+              تمام لایه‌ها و بسته‌ها با پهنای‌باند و اتصال اینترنتِ هاست لینوکسی دریافت می‌شوند و ترافیکی از ویندوز مصرف نمی‌شود.
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="refreshDockerDownloads()" class="btn btn-outline text-xs px-2.5 py-1.5" title="بروزرسانی وضعیت صف">🔄 بروزرسانی</button>
+          <button onclick="closeModal('modal-docker-downloads')" class="text-slate-400 hover:text-white text-sm">✕</button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Grid -->
+      <div class="grid grid-cols-4 gap-2.5">
+        <div class="glass-panel p-2.5 bg-slate-800/40 border-white/5 flex items-center justify-between">
+          <div>
+            <span class="text-[10px] text-slate-400 block font-medium">در حال دانلود</span>
+            <span id="dl-stat-downloading" class="text-base font-bold text-sky-400 font-mono">0</span>
+          </div>
+          <span class="text-lg">⚡</span>
+        </div>
+        <div class="glass-panel p-2.5 bg-slate-800/40 border-white/5 flex items-center justify-between">
+          <div>
+            <span class="text-[10px] text-slate-400 block font-medium">در صف انتظار</span>
+            <span id="dl-stat-queued" class="text-base font-bold text-amber-400 font-mono">0</span>
+          </div>
+          <span class="text-lg">⏳</span>
+        </div>
+        <div class="glass-panel p-2.5 bg-slate-800/40 border-white/5 flex items-center justify-between">
+          <div>
+            <span class="text-[10px] text-slate-400 block font-medium">تکمیل شده</span>
+            <span id="dl-stat-completed" class="text-base font-bold text-emerald-400 font-mono">0</span>
+          </div>
+          <span class="text-lg">✅</span>
+        </div>
+        <div class="glass-panel p-2.5 bg-slate-800/40 border-white/5 flex items-center justify-between">
+          <div>
+            <span class="text-[10px] text-slate-400 block font-medium">ناموفق / لغو شده</span>
+            <span id="dl-stat-failed" class="text-base font-bold text-rose-400 font-mono">0</span>
+          </div>
+          <span class="text-lg">❌</span>
+        </div>
+      </div>
+
+      <!-- Add New Image to Download Queue Box -->
+      <div class="glass-panel p-3 bg-slate-800/30 border-white/5 flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+          <input type="text" id="input-new-download-image" placeholder="نام و تگ ایمیج را وارد کنید (مثال: nginx:alpine یا redis:latest یا ubuntu:22.04 یا portainer/portainer-ce)" class="flex-1 bg-slate-900/90 border border-white/10 rounded-xl px-3.5 py-2 text-white font-mono text-xs outline-none focus:border-emerald-500" onkeydown="if(event.key==='Enter') addCustomImageToDownloadQueue()">
+          <button onclick="addCustomImageToDownloadQueue()" class="btn btn-primary text-xs px-4 py-2 flex items-center gap-1.5 whitespace-nowrap bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
+            <span>➕ افزودن به صف دانلود</span>
+          </button>
+        </div>
+        <div class="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
+          <span>پیشنهادهای سریع:</span>
+          <button onclick="fillQuickDownloadImage('nginx:alpine')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-white/5">nginx:alpine</button>
+          <button onclick="fillQuickDownloadImage('redis:alpine')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-white/5">redis:alpine</button>
+          <button onclick="fillQuickDownloadImage('postgres:16-alpine')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-white/5">postgres:16-alpine</button>
+          <button onclick="fillQuickDownloadImage('mysql:8.0')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-white/5">mysql:8.0</button>
+          <button onclick="fillQuickDownloadImage('node:20-alpine')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-white/5">node:20-alpine</button>
+          <button onclick="fillQuickDownloadImage('python:3.11-slim')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-white/5">python:3.11-slim</button>
+        </div>
+      </div>
+
+      <!-- Active Download Section (Dynamic) -->
+      <div id="dl-active-container">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Queue & History Table Section -->
+      <div class="flex-1 glass-panel border-white/5 overflow-hidden flex flex-col min-h-[180px]">
+        <div class="p-2.5 bg-slate-800/40 border-b border-white/5 text-xs font-bold text-slate-300 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span>فهرست و وضعیت صف دانلود:</span>
+            <span id="dl-queue-total-meta" class="text-slate-400 font-mono text-[11px]"></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="clearCompletedDockerDownloads()" class="text-[11px] text-slate-400 hover:text-white underline">پاکسازی موارد پایان‌یافته</button>
+          </div>
+        </div>
+        <div class="overflow-y-auto flex-1">
+          <table class="w-full text-right text-xs">
+            <thead class="text-slate-400 bg-slate-800/60 uppercase font-mono text-[11px] sticky top-0 bg-slate-900 z-10 border-b border-white/5">
+              <tr>
+                <th class="py-2 px-3">ایمیج (Image)</th>
+                <th class="py-2 px-3">ثبت / شروع</th>
+                <th class="py-2 px-3">وضعیت فعلی</th>
+                <th class="py-2 px-3">پیشرفت</th>
+                <th class="py-2 px-3 text-center">عملیات</th>
+              </tr>
+            </thead>
+            <tbody id="docker-downloads-tbody" class="divide-y divide-white/5 font-mono">
+              <tr><td colspan="5" class="py-8 text-center text-slate-500 font-sans">هیچ دانلودی در صف یا تاریخچه وجود ندارد.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Download File from Internet URL -->
+  <div id="modal-download-url" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-lg p-6 bg-[#0a0e17]/95 border-white/10 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <h3 class="font-bold text-white text-base flex items-center gap-2">
+          <span class="text-emerald-400">📥</span> دانلود مستقیم فایل روی سیستم لینوکسی
+        </h3>
+        <button onclick="closeModal('modal-download-url')" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+
+      <p class="text-xs text-slate-300 leading-relaxed">
+        لینک مستقیم دانلود فایل را وارد کنید. فایل با سرعت اتصال اینترنتِ خود سیستم لینوکسی دانلود شده و در پوشه انتخابی شما (پیش‌فرض: <code class="text-emerald-300 font-mono">Downloads</code>) ذخیره می‌شود.
+      </p>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">آدرس لینک دانلود (URL):</label>
+          <input type="text" id="download-url-input" placeholder="https://example.com/file.zip یا فایل iso، tar.gz، دیتاست..." class="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2.5 text-white font-mono outline-none focus:border-emerald-500">
+        </div>
+
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">مسیر ذخیره در لینوکس (اختیاری):</label>
+          <input type="text" id="download-target-dir-input" placeholder="پیش‌فرض: پوشه دانلود لینوکس (~/Downloads)" class="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-emerald-500">
+        </div>
+
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">نام دلخواه فایل (اختیاری):</label>
+          <input type="text" id="download-filename-input" placeholder="در صورت خالی بودن، نام اصلی فایل از لینک برداشته می‌شود" class="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-emerald-500">
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+        <button onclick="closeModal('modal-download-url')" class="btn btn-outline text-xs px-4 py-2">انصراف</button>
+        <button onclick="executeDownloadUrl()" id="btn-submit-download-url" class="btn btn-primary text-xs px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
+          📥 شروع دانلود در لینوکس
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Install Agent Modal -->
+  <div id="modal-agent" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-md p-6 bg-[#0a0e17]/95 border-white/10 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <h3 class="font-bold text-white text-base flex items-center gap-2">
+          <span class="text-amber-400">⚡</span> نصب خودکار ایجنت ServDock
+        </h3>
+        <button onclick="closeModal('modal-agent')" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+      <p class="text-xs text-slate-300 leading-relaxed">
+        اسکریپت فوق‌سبک اختصاصی ServDock بدون نیاز به اینترنت یا ابزار اضافی، مستقیماً روی سرور شما مستقر شده و سرویس داکر و سیستم را با بالاترین سرعت مانیتور می‌کند.
+      </p>
+
+      <div class="space-y-2 text-xs">
+        <label class="block text-slate-300 font-medium">رمز عبور sudo (در صورت نیاز به دسترسی root):</label>
+        <input type="password" id="agent-sudo-pass" placeholder="اختیاری - در صورت خالی بودن از رمز اتصال SSH استفاده می‌شود" class="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-blue-500">
+      </div>
+
+      <div id="agent-install-status-box" class="hidden p-3 rounded-xl bg-slate-900 border border-white/10 text-xs font-mono text-slate-300">
+        <div class="flex items-center gap-2">
+          <span class="animate-spin text-blue-400">⏳</span>
+          <span id="agent-install-status-text">در حال انتقال و اجرای ایجنت...</span>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+        <button onclick="closeModal('modal-agent')" class="btn btn-outline text-xs px-4 py-2">انصراف</button>
+        <button onclick="startAgentInstallation()" id="btn-start-agent-install" class="btn btn-primary text-xs px-5 py-2">شروع نصب</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= WEB SERVER MODALS ================= -->
+  <!-- Create VirtualHost Modal -->
+  <div id="modal-create-vhost" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-lg p-6 bg-[#0a0e17]/95 border-white/10 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <h3 class="font-bold text-white text-base flex items-center gap-2">
+          <span class="text-sky-400">🌐</span> ساخت هاست مجازی جدید (Apache VirtualHost)
+        </h3>
+        <button onclick="closeModal('modal-create-vhost')" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+      <p class="text-xs text-slate-300 leading-relaxed">
+        مشخصات سایت یا هاست مجازی جدید را وارد کنید. فایل کانفیگ آپاچی به صورت خودکار ساخته شده و هاست فعال می‌گردد (<code class="text-sky-300 font-mono">a2ensite</code>).
+      </p>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">نام دامنه یا هاست (ServerName):</label>
+          <input type="text" id="vhost-input-domain" placeholder="مثلاً mysite.local یا api.example.com" class="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-sky-500">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-300 mb-1 font-medium">پورت سرویس‌دهی:</label>
+            <input type="number" id="vhost-input-port" value="80" class="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-sky-500">
+          </div>
+          <div>
+            <label class="block text-slate-300 mb-1 font-medium">ایمیل ادمین سرور:</label>
+            <input type="email" id="vhost-input-admin" value="webmaster@localhost" class="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-sky-500">
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">مسیر پوشه فایل‌های سایت (DocumentRoot):</label>
+          <input type="text" id="vhost-input-docroot" placeholder="پیش‌فرض: /var/www/domain" class="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-sky-500">
+          <p class="text-[10px] text-slate-500 mt-1">در صورت خالی گذاشتن، به صورت خودکار در <code class="font-mono text-slate-400">/var/www/نام‌دامنه</code> ایجاد خواهد شد.</p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+        <button onclick="closeModal('modal-create-vhost')" class="btn btn-outline text-xs px-4 py-2">انصراف</button>
+        <button onclick="submitCreateVhost()" id="btn-submit-create-vhost" class="btn btn-primary text-xs px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold">
+          ایجاد و فعال‌سازی هاست
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit VirtualHost Config Modal -->
+  <div id="modal-edit-vhost" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-2xl p-6 bg-[#0a0e17]/95 border-white/10 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <h3 class="font-bold text-white text-base flex items-center gap-2">
+          <span class="text-amber-400">📝</span> ویرایش فایل کانفیگ هاست مجازی: <span id="vhost-edit-name" class="font-mono text-sky-400 text-sm"></span>
+        </h3>
+        <button onclick="closeModal('modal-edit-vhost')" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+
+      <div>
+        <textarea id="vhost-edit-textarea" rows="14" class="w-full bg-[#050811] border border-white/10 rounded-xl p-3 text-xs font-mono text-emerald-400 outline-none focus:border-sky-500 leading-relaxed resize-y select-text"></textarea>
+      </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-white/10">
+        <button onclick="testWebConfig()" class="btn btn-secondary text-xs px-3 py-2 text-sky-400 font-bold">
+          🧪 تست صحت کانفیگ (configtest)
+        </button>
+        <div class="flex items-center gap-2">
+          <button onclick="closeModal('modal-edit-vhost')" class="btn btn-outline text-xs px-4 py-2">انصراف</button>
+          <button onclick="saveVhostConfig()" id="btn-save-vhost" class="btn btn-primary text-xs px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
+            💾 ذخیره و بارگذاری مجدد
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create MySQL Database Modal -->
+  <div id="modal-create-db" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-md p-6 bg-[#0a0e17]/95 border-white/10 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <h3 class="font-bold text-white text-base flex items-center gap-2">
+          <span class="text-amber-400">🐬</span> ساخت دیتابیس MySQL / MariaDB
+        </h3>
+        <button onclick="closeModal('modal-create-db')" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">نام پایگاه داده (Database Name):</label>
+          <input type="text" id="db-input-name" placeholder="مثلاً wordpress_db یا app_main" class="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-amber-500">
+        </div>
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">مجموعه کاراکتر (Collation):</label>
+          <select id="db-input-collation" class="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-white font-mono outline-none focus:border-amber-500">
+            <option value="utf8mb4_unicode_ci" selected>utf8mb4_unicode_ci (توصیه شده - پشتیبانی کامل یونیکد و ایموجی)</option>
+            <option value="utf8mb4_general_ci">utf8mb4_general_ci</option>
+            <option value="utf8_general_ci">utf8_general_ci</option>
+            <option value="utf8mb4_0900_ai_ci">utf8mb4_0900_ai_ci (MySQL 8.0+)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+        <button onclick="closeModal('modal-create-db')" class="btn btn-outline text-xs px-4 py-2">انصراف</button>
+        <button onclick="submitCreateDb()" id="btn-submit-create-db" class="btn btn-primary text-xs px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold">
+          ایجاد پایگاه داده
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SQL Query Console Modal -->
+  <div id="modal-sql-console" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-3xl p-6 bg-[#0a0e17]/95 border-white/10 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <h3 class="font-bold text-white text-base flex items-center gap-2">
+          <span class="text-sky-400">💻</span> کنسول اجرای کوئری SQL (MySQL Runner)
+        </h3>
+        <button onclick="closeModal('modal-sql-console')" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+
+      <div class="flex items-center gap-3 text-xs">
+        <label class="text-slate-300 font-medium">پایگاه داده هدف:</label>
+        <select id="sql-db-select" class="flex-1 bg-slate-800 border border-white/10 rounded-xl px-3 py-1.5 text-white font-mono outline-none focus:border-sky-500">
+          <option value="">بدون انتخاب پایگاه داده (کوئری عمومی سرور)</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-slate-300 text-xs mb-1 font-medium">دستور SQL:</label>
+        <textarea id="sql-query-input" rows="4" placeholder="مثلاً SHOW DATABASES; یا SELECT * FROM users LIMIT 10;" class="w-full bg-[#050811] border border-white/10 rounded-xl p-3 text-xs font-mono text-amber-300 outline-none focus:border-sky-500 leading-relaxed resize-y"></textarea>
+      </div>
+
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] text-slate-500 font-mono">سقف کوئری‌های SELECT جهت امنیت روی ۱۰۰ سطر محدود می‌شود.</span>
+        <button onclick="executeSqlQuery()" id="btn-run-sql" class="btn btn-primary text-xs px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold flex items-center gap-1.5">
+          ▶️ اجرای کوئری (Run)
+        </button>
+      </div>
+
+      <!-- Result Area -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-[11px] text-slate-400">
+          <span>نتیجه اجرا:</span>
+          <span id="sql-result-meta" class="font-mono text-emerald-400"></span>
+        </div>
+        <div id="sql-result-container" class="max-h-60 overflow-auto rounded-xl border border-white/10 bg-[#050811] p-3 text-xs font-mono text-slate-300">
+          <div class="text-slate-500 italic">هنوز کوئری اجرا نشده است.</div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end pt-3 border-t border-white/10">
+        <button onclick="closeModal('modal-sql-console')" class="btn btn-outline text-xs px-4 py-2">بستن</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Web & DB Logs Modal -->
+  <div id="modal-web-logs" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-3xl p-6 bg-[#0a0e17]/95 border-white/10 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <h3 class="font-bold text-white text-base flex items-center gap-2">
+          <span class="text-slate-300">📋</span> لاگ‌های وب‌سرور و پایگاه داده
+        </h3>
+        <button onclick="closeModal('modal-web-logs')" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2">
+          <label class="text-slate-300 font-medium">منبع لاگ:</label>
+          <select id="web-log-type-select" onchange="fetchWebLogs()" class="bg-slate-800 border border-white/10 rounded-xl px-3 py-1.5 text-white font-mono outline-none focus:border-sky-500">
+            <option value="apache_error">خطاهای آپاچی (Apache Error Log)</option>
+            <option value="apache_access">درخواست‌های آپاچی (Apache Access Log)</option>
+            <option value="mysql_error">خطاهای دیتابیس (MySQL Error Log)</option>
+            <option value="nginx_error">خطاهای انجین‌اکس (Nginx Error Log)</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="fetchWebLogs()" class="btn btn-secondary text-xs px-3 py-1.5 font-bold">🔄 بازخوانی</button>
+          <button onclick="copyToClipboard(document.getElementById('web-logs-content').textContent)" class="btn btn-secondary text-xs px-3 py-1.5 font-bold">📋 کپی متن</button>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-white/10 bg-[#050811] p-3 text-[11px] font-mono text-slate-300 max-h-96 overflow-auto">
+        <pre id="web-logs-content" class="whitespace-pre-wrap select-text text-slate-300">در حال دریافت فایل لاگ...</pre>
+      </div>
+
+      <div class="flex items-center justify-end pt-3 border-t border-white/10">
+        <button onclick="closeModal('modal-web-logs')" class="btn btn-outline text-xs px-4 py-2">بستن</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- SCRIPTS -->
+  <script src="js/app.js"></script>
+</body>
+</html>
