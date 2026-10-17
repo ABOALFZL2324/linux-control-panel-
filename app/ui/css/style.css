@@ -190,9 +190,22 @@ body {
 .nav-item.active {
   color: #ffffff;
   background: #2563eb;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
 }
 
-/* Status Dot */
+/* Status Dot with Modern Pulse */
+@keyframes beacon-pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+@keyframes beacon-pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
+  70% { box-shadow: 0 0 0 6px rgba(244, 63, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+}
+
 .status-beacon {
   position: relative;
   width: 8px;
@@ -200,10 +213,12 @@ body {
   border-radius: 50%;
   display: inline-block;
   flex-shrink: 0;
+  transition: all 0.3s ease;
 }
 
 .status-beacon.online {
   background-color: #10b981;
+  animation: beacon-pulse-green 2s infinite;
 }
 
 .status-beacon.offline {
@@ -225,6 +240,23 @@ body {
 .progress-fill {
   height: 100%;
   border-radius: 4px;
+  transition: width 0.3s ease-out;
+}
+
+/* Modern Hover & Card Elevation */
+.glass-panel {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.glass-panel:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Micro Interactions */
+button {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+button:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 /* Toast Notifications */

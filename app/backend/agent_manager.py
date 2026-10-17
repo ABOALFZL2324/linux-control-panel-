@@ -92,13 +92,14 @@ chmod 755 /opt/servdock/servdock_agent.py
 if [ ! -s /opt/servdock/agent.token ]; then
     python3 -c "import secrets; print(secrets.token_hex(32))" > /opt/servdock/agent.token
 fi
-chmod 644 /opt/servdock/agent.token
+chmod 600 /opt/servdock/agent.token
 
 # Sync token to active user home for fallback
 USER_HOME=$(eval echo "~$SUDO_USER")
 if [ -n "$USER_HOME" ] && [ -d "$USER_HOME" ]; then
     mkdir -p "$USER_HOME/.servdock"
     cp -f /opt/servdock/agent.token "$USER_HOME/.servdock/agent.token" 2>/dev/null || true
+    chmod 600 "$USER_HOME/.servdock/agent.token" 2>/dev/null || true
     chown -R "$SUDO_USER:" "$USER_HOME/.servdock" 2>/dev/null || true
 fi
 

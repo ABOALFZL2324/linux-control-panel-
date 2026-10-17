@@ -65,10 +65,23 @@ class ApiBridge:
 
     # ----------------- SERVERS -----------------
     def get_servers(self):
-        return self.config_store.get_all_servers()
+        servers = self.config_store.get_all_servers()
+        safe_list = []
+        for s in servers:
+            item = dict(s)
+            item["has_password"] = bool(item.get("password"))
+            item["password"] = "******" if item.get("password") else ""
+            safe_list.append(item)
+        return safe_list
 
     def get_server_details(self, server_id):
-        return self.config_store.get_server_by_id(server_id)
+        srv = self.config_store.get_server_by_id(server_id)
+        if not srv:
+            return None
+        item = dict(srv)
+        item["has_password"] = bool(item.get("password"))
+        item["password"] = "******" if item.get("password") else ""
+        return item
 
     def save_server(self, server_data):
         return self.config_store.save_server(server_data)
@@ -115,6 +128,10 @@ class ApiBridge:
         port = int(server_data.get("port", 22))
         username = server_data.get("username", "root")
         password = server_data.get("password")
+        if password == "******" and server_data.get("id"):
+            existing = self.config_store.get_server_by_id(server_data.get("id"))
+            if existing:
+                password = existing.get("password")
         key_path = server_data.get("key_path")
 
         start_time = time.time()

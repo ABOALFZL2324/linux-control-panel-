@@ -136,7 +136,11 @@ class ConfigStore:
         
         to_store = dict(server_data)
         pwd = to_store.get("password")
-        if pwd:
+        if pwd == "******" and server_id:
+            raw_s = next((s for s in raw_servers if s.get("id") == server_id), None)
+            if raw_s and raw_s.get("password"):
+                to_store["password"] = raw_s["password"]
+        elif pwd:
             if not str(pwd).startswith("DPAPI:") and not str(pwd).startswith("B64:"):
                 to_store["password"] = self._encode_secret(pwd)
 

@@ -104,12 +104,18 @@ class SSHClientWrapper:
                 self.disconnect()
                 return {"success": False, "stdout": "", "stderr": "ارتباط SSH قطع شده است (Connection Lost)", "code": -1}
 
-            if sudo and self.current_server and self.current_server.get("username") != "root":
-                pass_to_use = sudo_password or self.current_server.get("password") or ""
-                safe_pass_arg = shlex.quote(pass_to_use)
-                command = f"printf '%s\\n' {safe_pass_arg} | sudo -S -p '' bash -c {shlex.quote(command)}"
+            use_sudo = sudo and self.current_server and self.current_server.get("username") != "root"
+            cmd_to_run = f"sudo -S -p '' bash -c {shlex.quote(command)}" if use_sudo else command
+            pass_to_use = (sudo_password or self.current_server.get("password") or "") if use_sudo else ""
 
-            stdin, stdout, stderr = self.client.exec_command(command, timeout=timeout)
+            stdin, stdout, stderr = self.client.exec_command(cmd_to_run, timeout=timeout)
+            if use_sudo and pass_to_use:
+                try:
+                    stdin.write(pass_to_use + "\n")
+                    stdin.flush()
+                except Exception:
+                    pass
+
             out = stdout.read().decode("utf-8", errors="replace")
             err = stderr.read().decode("utf-8", errors="replace")
             exit_code = stdout.channel.recv_exit_status()
@@ -127,6 +133,10 @@ class SSHClientWrapper:
             return {"success": False, "stdout": "", "stderr": f"ارتباط با سرور حین اجرای دستور قطع شد: {e}", "code": -1}
         except Exception as e:
             return {"success": False, "stdout": "", "stderr": str(e), "code": -1}
+
+    def execute_sudo_command(self, command: str, timeout: int = 25):
+        """Executes a command with sudo privileges."""
+        return self.execute_command(command, sudo=True, timeout=timeout)
 
     def get_sftp(self):
         if not self.is_connected or not self.client:

@@ -110,6 +110,7 @@ function switchTab(tabName) {
     if (tabName === 'rdp') checkRdpStatus();
     if (tabName === 'tailscale') refreshTailscaleStatus();
     if (tabName === 'webserver') refreshWebServerData();
+    if (tabName === 'power') refreshHardwareStatus(false);
 }
 
 // ----------------- SERVERS & DROPDOWN -----------------
@@ -4312,8 +4313,440 @@ async function fetchWebLogs() {
     }
 }
 
+// ----------------- HARDWARE & PRIVACY CONTROLS -----------------
+async function refreshHardwareStatus(showToastMsg = false) {
+    if (!isConnected) return;
+    try {
+        const res = await callApi('hardware_get_status');
+        if (!res || !res.connected) return;
+
+        const pill = document.getElementById('hw-status-pill');
+        if (pill) {
+            pill.textContent = "سخت‌افزارها آنلاین";
+            pill.className = "text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-mono";
+        }
+
+        // Monitor
+        const monStatus = document.getElementById('hw-monitor-status');
+        const monBadge = document.getElementById('hw-monitor-badge');
+        if (monStatus && monBadge) {
+            if (res.monitor_on) {
+                monStatus.textContent = "صفحه نمایش روشن است";
+                monBadge.textContent = "روشن";
+                monBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold";
+            } else {
+                monStatus.textContent = "مانیتور در حالت Standby / خاموش";
+                monBadge.textContent = "خاموش";
+                monBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 font-bold";
+            }
+        }
+
+        // Mouse
+        const mouseStatus = document.getElementById('hw-mouse-status');
+        const mouseBadge = document.getElementById('hw-mouse-badge');
+        if (mouseStatus && mouseBadge) {
+            if (res.mouse_enabled) {
+                mouseStatus.textContent = "موس و اشاره‌گر فعال است";
+                mouseBadge.textContent = "فعال";
+                mouseBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold";
+            } else {
+                mouseStatus.textContent = "موس قفل و غیرفعال است";
+                mouseBadge.textContent = "قفل";
+                mouseBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold";
+            }
+        }
+
+        // Keyboard
+        const kbStatus = document.getElementById('hw-kb-status');
+        const kbBadge = document.getElementById('hw-kb-badge');
+        if (kbStatus && kbBadge) {
+            if (res.keyboard_enabled) {
+                kbStatus.textContent = "کیبورد فیزیکی فعال است";
+                kbBadge.textContent = "فعال";
+                kbBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold";
+            } else {
+                kbStatus.textContent = "کیبورد قفل و مسدود است";
+                kbBadge.textContent = "قفل";
+                kbBadge.className = "text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold";
+            }
+        }
+
+        // Check safety timer status
+        const timerRes = await callApi('hardware_get_safety_timer_status');
+        const timerInfo = document.getElementById('hw-timer-info');
+        if (timerInfo && timerRes) {
+            if (timerRes.active && timerRes.remaining_seconds > 0) {
+                const remMins = Math.ceil(timerRes.remaining_seconds / 60);
+                timerInfo.textContent = `(فعال: ${remMins} دقیقه تا بازگشایی خودکار)`;
+            } else {
+                timerInfo.textContent = "";
+            }
+        }
+
+        if (showToastMsg) {
+            showToast("وضعیت سخت‌افزارهای فیزیکی با موفقیت دریافت شد", "info");
+        }
+    } catch (e) {
+        console.error("Error refreshing hardware status:", e);
+    }
+}
+
+async function toggleHardwareDevice(device, enable) {
+    if (!isConnected) {
+        showToast("ابتدا به سرور متصل شوید", "error");
+        return;
+    }
+    let res;
+    if (device === 'monitor') res = await callApi('hardware_set_monitor', enable);
+    else if (device === 'mouse') res = await callApi('hardware_set_mouse', enable);
+    else if (device === 'keyboard') res = await callApi('hardware_set_keyboard', enable);
+
+    if (res && res.success) {
+        showToast(res.message || "تنظیم با موفقیت اعمال شد", "success");
+        setTimeout(() => refreshHardwareStatus(false), 500);
+    } else {
+        showToast(res ? res.error : "خطا در اعمال تنظیم سخت‌افزار", "error");
+    }
+}
+
+async function triggerEmergencyUnlock() {
+    if (!isConnected) return;
+    const res = await callApi('hardware_emergency_unlock');
+    if (res && res.success) {
+        showToast(res.message || "کلیه ورودی‌ها و مانیتور با موفقیت آزاد شدند!", "success");
+        setTimeout(() => refreshHardwareStatus(false), 500);
+    } else {
+        showToast(res ? res.error : "خطا در بازگشایی اضطراری", "error");
+    }
+}
+
+async function setHardwareSafetyTimer(minutes) {
+    if (!isConnected) return;
+    const res = await callApi('hardware_set_safety_timer', minutes);
+    if (res && res.success) {
+        showToast(res.message || `تایمر ایمنی برای ${minutes} دقیقه فعال شد`, "success");
+        setTimeout(() => refreshHardwareStatus(false), 500);
+    } else {
+        showToast(res ? res.error : "خطا در تنظیم تایمر", "error");
+    }
+}
+
+async function cancelHardwareSafetyTimer() {
+    if (!isConnected) return;
+    const res = await callApi('hardware_cancel_safety_timer');
+    if (res && res.success) {
+        showToast(res.message || "تایمر ایمنی لغو شد", "info");
+        setTimeout(() => refreshHardwareStatus(false), 500);
+    } else {
+        showToast(res ? res.error : "خطا در لغو تایمر", "error");
+    }
+}
+
+// ----------------- LIVE WEBCAM & AV INTERCOM -----------------
+function openIntercomModal() {
+    if (!isConnected) {
+        showToast("برای استفاده از وبکم و صدا ابتدا به سرور متصل شوید", "error");
+        return;
+    }
+    openModal('modal-av-intercom');
+    switchIntercomView('cam');
+}
+
+function switchIntercomView(view) {
+    const views = ['cam', 'mic', 'devices'];
+    views.forEach(v => {
+        const el = document.getElementById(`intercom-view-${v}`);
+        const btn = document.getElementById(`tab-btn-intercom-${v}`);
+        if (el) {
+            if (v === view) el.classList.remove('hidden');
+            else el.classList.add('hidden');
+        }
+        if (btn) {
+            if (v === view) {
+                btn.className = "px-3 py-1.5 rounded-lg bg-blue-600 text-white font-bold";
+            } else {
+                btn.className = "px-3 py-1.5 rounded-lg text-slate-400 hover:text-white font-bold";
+            }
+        }
+    });
+
+    if (view === 'devices') loadAvDevicesList();
+}
+
+async function captureLinuxWebcamFrame() {
+    const devSelect = document.getElementById('intercom-cam-device');
+    const device = devSelect ? devSelect.value : '/dev/video0';
+    const btn = document.getElementById('btn-capture-cam');
+    const img = document.getElementById('intercom-cam-image');
+    const placeholder = document.getElementById('intercom-cam-placeholder');
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>⏳</span> در حال دریافت تصویر...';
+    }
+
+    try {
+        const res = await callApi('av_get_linux_cam_frame', device);
+        if (res && res.success && res.image_base64) {
+            if (img) {
+                img.src = 'data:image/jpeg;base64,' + res.image_base64;
+                img.classList.remove('hidden');
+            }
+            if (placeholder) placeholder.classList.add('hidden');
+            showToast("فریم جدید از وبکم دریافت شد", "success");
+        } else {
+            showToast(res ? res.error : "خطا در دریافت تصویر از وبکم", "error");
+        }
+    } catch (e) {
+        showToast("خطا در ارتباط با وبکم: " + e.message, "error");
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span>📸</span> دریافت تصویر از وبکم';
+        }
+    }
+}
+
+async function recordAndPlayLinuxMic() {
+    const durSelect = document.getElementById('intercom-mic-duration');
+    const dur = durSelect ? parseInt(durSelect.value) || 3 : 3;
+    const btn = document.getElementById('btn-record-mic');
+    const box = document.getElementById('intercom-audio-playback-box');
+    const player = document.getElementById('intercom-audio-player');
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span>🔴</span> در حال ضبط صدای محیط (${dur} ثانیه)...`;
+    }
+
+    try {
+        const res = await callApi('av_record_linux_mic', dur);
+        if (res && res.success && res.audio_base64) {
+            if (player) {
+                player.src = 'data:audio/wav;base64,' + res.audio_base64;
+                if (box) box.classList.remove('hidden');
+                player.play().catch(() => {});
+            }
+            showToast("صدا ضبط شد و در حال پخش است", "success");
+        } else {
+            showToast(res ? res.error : "خطا در ضبط صدا از میکروفن", "error");
+        }
+    } catch (e) {
+        showToast("خطا در ضبط صدا: " + e.message, "error");
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span>🎙️</span> شروع ضبط و شنود صدای محیط سرور';
+        }
+    }
+}
+
+async function loadAvDevicesList() {
+    const listEl = document.getElementById('intercom-devices-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<div class="text-slate-400">در حال جستجوی کارت‌های صوتی و وبکم‌ها...</div>';
+
+    try {
+        const res = await callApi('av_get_devices');
+        if (!res || !res.connected) {
+            listEl.innerHTML = '<div class="text-rose-400">خطا: ' + (res ? res.error : "عدم ارتباط") + '</div>';
+            return;
+        }
+
+        let html = '';
+        html += '<div class="text-sky-300 font-bold mb-1">📹 دوربین‌های شناسایی شده:</div>';
+        if (res.cameras && res.cameras.length > 0) {
+            html += res.cameras.map(c => `<div class="p-1.5 rounded bg-slate-900 border border-white/5 text-emerald-400">📷 ${escapeHtml(c)}</div>`).join('');
+        } else {
+            html += '<div class="text-slate-500 italic p-1">هیچ وبکمی در /dev/video یافت نشد.</div>';
+        }
+
+        html += '<div class="text-amber-300 font-bold mt-2 mb-1">🎙️ میکروفن‌ها (ورودی ضبط صدا):</div>';
+        if (res.microphones && res.microphones.length > 0) {
+            html += res.microphones.map(m => `<div class="p-1.5 rounded bg-slate-900 border border-white/5 text-slate-300">${escapeHtml(m)}</div>`).join('');
+        } else {
+            html += '<div class="text-slate-500 italic p-1">میکروفنی یافت نشد.</div>';
+        }
+
+        html += '<div class="text-indigo-300 font-bold mt-2 mb-1">🔊 بلندگوها و خروجی‌های صدا:</div>';
+        if (res.speakers && res.speakers.length > 0) {
+            html += res.speakers.map(s => `<div class="p-1.5 rounded bg-slate-900 border border-white/5 text-slate-300">${escapeHtml(s)}</div>`).join('');
+        } else {
+            html += '<div class="text-slate-500 italic p-1">بلندگویی یافت نشد.</div>';
+        }
+
+        listEl.innerHTML = html;
+    } catch (e) {
+        listEl.innerHTML = '<div class="text-rose-400">خطا در دریافت تجهیزات: ' + e.message + '</div>';
+    }
+}
+
+// ----------------- MYSQL DATABASE RESTORE & USER MANAGEMENT -----------------
+async function openRestoreDbModal() {
+    if (!isConnected) {
+        showToast("ابتدا به سرور متصل شوید", "error");
+        return;
+    }
+    const select = document.getElementById('restore-db-select');
+    if (select) {
+        select.innerHTML = '<option value="">-- در حال دریافت دیتابیس‌ها... --</option>';
+        try {
+            const res = await callApi('web_mysql_list_databases');
+            if (res && res.success && res.databases) {
+                const nonSys = res.databases.filter(d => !d.is_system);
+                select.innerHTML = nonSys.length > 0
+                    ? nonSys.map(d => `<option value="${escapeHtml(d.name)}">${escapeHtml(d.name)}</option>`).join('')
+                    : res.databases.map(d => `<option value="${escapeHtml(d.name)}">${escapeHtml(d.name)}</option>`).join('');
+            }
+        } catch (e) {}
+    }
+    openModal('modal-restore-db');
+}
+
+async function submitRestoreDatabase() {
+    const select = document.getElementById('restore-db-select');
+    const fileInput = document.getElementById('restore-db-filepath');
+    const db = select ? select.value.trim() : '';
+    const path = fileInput ? fileInput.value.trim() : '';
+
+    if (!db) {
+        showToast("لطفاً دیتابیس مقصد را انتخاب کنید", "error");
+        return;
+    }
+    if (!path) {
+        showToast("لطفاً مسیر فایل SQL بکاپ را وارد نمایید", "error");
+        return;
+    }
+
+    const btn = document.getElementById('btn-submit-restore-db');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "در حال بازیابی فایل...";
+    }
+
+    try {
+        const res = await callApi('web_mysql_restore_database', db, path);
+        if (res && res.success) {
+            closeModal('modal-restore-db');
+            showToast(res.message || `دیتابیس ${db} با موفقیت بازیابی شد!`, "success");
+            setTimeout(() => refreshWebServerData(false), 800);
+        } else {
+            showToast(res ? res.error : "خطا در بازیابی دیتابیس", "error");
+        }
+    } catch (e) {
+        showToast("خطای سیستم در بازیابی: " + e.message, "error");
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = "شروع بازیابی (Restore)";
+        }
+    }
+}
+
+async function openMysqlUsersModal() {
+    if (!isConnected) {
+        showToast("ابتدا به سرور متصل شوید", "error");
+        return;
+    }
+    openModal('modal-mysql-users');
+    loadMysqlUsersList();
+
+    // Populate db grant select
+    const grantSelect = document.getElementById('new-db-user-grant');
+    if (grantSelect) {
+        grantSelect.innerHTML = '<option value="">بدون دیتابیس خاص</option>';
+        try {
+            const res = await callApi('web_mysql_list_databases');
+            if (res && res.success && res.databases) {
+                res.databases.forEach(d => {
+                    grantSelect.innerHTML += `<option value="${escapeHtml(d.name)}">دسترسی کامل به ${escapeHtml(d.name)}</option>`;
+                });
+            }
+        } catch (e) {}
+    }
+}
+
+async function loadMysqlUsersList() {
+    const tbody = document.getElementById('mysql-users-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="2" class="text-center py-4 text-slate-500">در حال دریافت لیست کاربران...</td></tr>';
+
+    try {
+        const res = await callApi('web_mysql_list_users');
+        if (res && res.success && res.users) {
+            if (res.users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" class="text-center py-4 text-slate-500">کاربری یافت نشد.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = res.users.map(u => `
+                <tr class="hover:bg-slate-800/40">
+                  <td class="py-2 px-3 text-white font-bold flex items-center gap-1.5">
+                    <span>👤</span> <span>${escapeHtml(u.user)}</span>
+                  </td>
+                  <td class="py-2 px-3 text-slate-400 font-mono">${escapeHtml(u.host)}</td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = `<tr><td colspan="2" class="text-center py-4 text-rose-400">${escapeHtml(res ? res.error : "خطا در دریافت کاربران")}</td></tr>`;
+        }
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="2" class="text-center py-4 text-rose-400">خطا: ${escapeHtml(e.message)}</td></tr>`;
+    }
+}
+
+async function submitCreateMysqlUser() {
+    const nameInput = document.getElementById('new-db-user-name');
+    const passInput = document.getElementById('new-db-user-pass');
+    const hostInput = document.getElementById('new-db-user-host');
+    const grantSelect = document.getElementById('new-db-user-grant');
+
+    const name = nameInput ? nameInput.value.trim() : '';
+    const pass = passInput ? passInput.value : '';
+    const host = hostInput ? hostInput.value.trim() || 'localhost' : 'localhost';
+    const grant = grantSelect ? grantSelect.value : null;
+
+    if (!name) {
+        showToast("نام کاربری الزامی است", "error");
+        return;
+    }
+    if (!pass) {
+        showToast("کلمه عبور نمی‌تواند خالی باشد", "error");
+        return;
+    }
+
+    try {
+        const res = await callApi('web_mysql_create_user', name, pass, host, grant);
+        if (res && res.success) {
+            showToast(res.message || `کاربر ${name} با موفقیت ایجاد شد!`, "success");
+            if (nameInput) nameInput.value = '';
+            if (passInput) passInput.value = '';
+            loadMysqlUsersList();
+        } else {
+            showToast(res ? res.error : "خطا در ساخت کاربر", "error");
+        }
+    } catch (e) {
+        showToast("خطا در ساخت کاربر: " + e.message, "error");
+    }
+}
+
 // Mock fallback for browser dev
 function mockApiResponse(method, args) {
+    if (method === 'hardware_get_status') {
+        return { connected: true, monitor_on: true, mouse_enabled: true, keyboard_enabled: true, devices: [] };
+    }
+    if (method === 'hardware_set_monitor') return { success: true, message: 'مانیتور با موفقیت تنظیم شد' };
+    if (method === 'hardware_set_mouse') return { success: true, message: 'موس با موفقیت تنظیم شد' };
+    if (method === 'hardware_set_keyboard') return { success: true, message: 'کیبورد با موفقیت تنظیم شد' };
+    if (method === 'hardware_emergency_unlock') return { success: true, message: 'کلیه ورودی‌ها و مانیتور آزاد شدند' };
+    if (method === 'hardware_set_safety_timer') return { success: true, message: 'تایمر ایمنی فعال شد' };
+    if (method === 'hardware_cancel_safety_timer') return { success: true, message: 'تایمر لغو شد' };
+    if (method === 'hardware_get_safety_timer_status') return { active: false, remaining_seconds: 0 };
+    if (method === 'av_get_devices') return { connected: true, cameras: ['/dev/video0'], microphones: ['card 0: PCH, device 0'], speakers: ['card 0: PCH, device 0'] };
+    if (method === 'av_get_linux_cam_frame') return { success: true, image_base64: '' };
+    if (method === 'av_record_linux_mic') return { success: true, audio_base64: '' };
+    if (method === 'web_mysql_list_users') return { success: true, users: [{ user: 'root', host: 'localhost' }, { user: 'app_user', host: '%' }] };
+    if (method === 'web_mysql_create_user') return { success: true, message: 'کاربر دیتابیس با موفقیت ساخته شد' };
+    if (method === 'web_mysql_restore_database') return { success: true, message: 'دیتابیس با موفقیت بازیابی شد' };
     if (method === 'get_servers') return [{ id: 'srv1', name: 'لینوکس مینت', host: '100.85.120.45', port: 22, username: 'aboalfzl' }];
     if (method === 'get_server_details') return { id: args[0], name: 'لینوکس مینت', host: '100.85.120.45', port: 22, username: 'aboalfzl', mac_address: 'd8:5e:d3:11:22:33' };
     if (method === 'get_connection_info') return { connected: false };

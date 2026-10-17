@@ -335,17 +335,28 @@ fi
     def create_vhost(self, domain: str, port=80, document_root="", server_admin="webmaster@localhost"):
         """Creates a new VirtualHost config file and document root."""
         dom = str(domain).strip().lower()
-        if not dom or not SAFE_NAME_REGEX.match(dom):
+        if not dom or not SAFE_NAME_REGEX.match(dom) or ".." in dom or "/" in dom:
             return {"success": False, "error": "نام دامنه یا شناسه سایت نامعتبر است"}
 
-        doc_root = document_root.strip() or f"/var/www/{dom}"
+        import os
+        raw_doc_root = document_root.strip() or f"/var/www/{dom}"
+        clean_doc_root = os.path.normpath(raw_doc_root).replace("\\", "/")
+        RESTRICTED_ROOTS = {"/", "/bin", "/boot", "/dev", "/etc", "/lib", "/lib64", "/proc", "/sys", "/usr", "/var", "/sbin", "/root", "/home"}
+        if clean_doc_root in RESTRICTED_ROOTS or clean_doc_root.count("/") < 2:
+            return {"success": False, "error": f"مسیر '{clean_doc_root}' نامعتبر یا پوشه سیستمی محافظت‌شده است."}
+
+        doc_root = clean_doc_root
+        safe_admin = re.sub(r'[^a-zA-Z0-9_\.\-@]', '', str(server_admin).strip()) or "webmaster@localhost"
+
         try:
             port_num = int(port)
+            if port_num < 1 or port_num > 65535:
+                port_num = 80
         except Exception:
             port_num = 80
 
         conf_content = f"""<VirtualHost *:{port_num}>
-    ServerAdmin {server_admin}
+    ServerAdmin {safe_admin}
     ServerName {dom}
     ServerAlias www.{dom}
     DocumentRoot {doc_root}
@@ -536,21 +547,28 @@ apache2ctl configtest >/dev/null 2>&1 && systemctl reload apache2
         """Creates a MySQL user and optionally grants privileges to a database."""
         user = str(username).strip()
         if not user or not DB_NAME_REGEX.match(user):
-            return {"success": False, "error": "نام کاربری نامعتبر است"}
+            return {"success": False, "error": "نام کاربری فقط می‌تواند شامل حروف، اعداد و _ باشد"}
         if not password:
             return {"success": False, "error": "رمز عبور نمی‌تواند خالی باشد"}
 
-        safe_pass = password.replace("'", "\\'")
         h = host.strip() or "localhost"
+        if not re.match(r"^[a-zA-Z0-9_\.\-%]+$", h):
+            return {"success": False, "error": "میزبان نامعتبر است"}
 
-        script = f"""
-mysql -e "CREATE USER IF NOT EXISTS '{user}'@'{h}' IDENTIFIED BY '{safe_pass}';"
-"""
+        # SQL string quote escaping
+        escaped_pass = password.replace("\\", "\\\\").replace("'", "''")
+
+        sql_commands = f"CREATE USER IF NOT EXISTS '{user}'@'{h}' IDENTIFIED BY '{escaped_pass}';\n"
         if grant_db:
             gdb = str(grant_db).strip()
             if DB_NAME_REGEX.match(gdb):
-                script += f"""
-mysql -e "GRANT ALL PRIVILEGES ON \\`{gdb}\\`.* TO '{user}'@'{h}'; FLUSH PRIVILEGES;"
+                sql_commands += f"GRANT ALL PRIVILEGES ON `{gdb}`.* TO '{user}'@'{h}';\n"
+        sql_commands += "FLUSH PRIVILEGES;\n"
+
+        # Execute using EOF stdin to completely avoid bash expansion or process arg sniffing
+        script = f"""cat << 'EOF' | mysql
+{sql_commands}
+EOF
 """
         res = self._execute(script, sudo=True, timeout=15)
         return {
