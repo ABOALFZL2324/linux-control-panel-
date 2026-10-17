@@ -14,8 +14,6 @@ from .file_manager import RemoteFileManager
 from .task_runner import TaskRunner
 from .power_manager import PowerManager
 from .tailscale_manager import TailscaleManager
-from .hardware_manager import HardwareControlManager
-from .av_manager import AVIntercomManager
 from .webserver_manager import WebServerManager
 
 logger = logging.getLogger("ServDock.ApiBridge")
@@ -54,8 +52,6 @@ class ApiBridge:
         self.task_runner = TaskRunner(self.ssh)
         self.power_mgr = PowerManager(self.ssh)
         self.ts_mgr = TailscaleManager(self.ssh)
-        self.hardware_mgr = HardwareControlManager(self.ssh)
-        self.av_mgr = AVIntercomManager(self.ssh)
         self.web_mgr = WebServerManager(self.ssh)
         self.active_server_id = None
         self.window = None
@@ -799,50 +795,6 @@ gatewayusagemethod:i:0
 
     def tailscale_funnel_stop(self, target="remote"):
         return self.ts_mgr.funnel_stop(target=target)
-
-    # ----------------- PHYSICAL HARDWARE LOCK & CONTROLS -----------------
-    def hardware_get_status(self):
-        return self.hardware_mgr.get_hardware_status()
-
-    def hardware_set_monitor(self, power_on):
-        return self.hardware_mgr.set_monitor_power(power_on)
-
-    def hardware_set_mouse(self, enabled):
-        return self.hardware_mgr.set_mouse_enabled(enabled)
-
-    def hardware_set_keyboard(self, enabled):
-        return self.hardware_mgr.set_keyboard_enabled(enabled)
-
-    def hardware_emergency_unlock(self):
-        return self.hardware_mgr.emergency_unlock_all()
-
-    def hardware_set_safety_timer(self, minutes=30):
-        return self.hardware_mgr.set_safety_timer(minutes)
-
-    def hardware_cancel_safety_timer(self):
-        return self.hardware_mgr.cancel_safety_timer()
-
-    def hardware_get_safety_timer_status(self):
-        return self.hardware_mgr.get_safety_timer_status()
-
-    # ----------------- AV INTERCOM (VOICE & VIDEO) -----------------
-    def av_get_devices(self):
-        return self.av_mgr.get_hardware_av_devices()
-
-    def av_send_audio_to_linux(self, audio_base64):
-        return self.av_mgr.play_audio_chunk_on_linux(audio_base64)
-
-    def av_record_linux_mic(self, duration_sec=3):
-        return self.av_mgr.record_linux_audio_clip(duration_sec)
-
-    def av_get_linux_cam_frame(self, device="/dev/video0"):
-        return self.av_mgr.capture_linux_webcam_frame(device)
-
-    def av_send_cam_frame_to_linux(self, image_base64):
-        return self.av_mgr.display_frame_on_linux_screen(image_base64)
-
-    def av_stop_cam_on_linux(self):
-        return self.av_mgr.stop_linux_screen_display()
 
     # ----------------- WEB SERVER (APACHE, MYSQL, PHP) -----------------
     def web_get_status(self):
