@@ -2,8 +2,7 @@
    ServDock Lightweight High-Performance UI
    Clean, Fast, Responsive Workstation (No Heavy Blur/Animations)
    ========================================================================== */
-
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600;700;800&display=swap');
+@import url('fonts.css');
 
 :root {
   --font-sans: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
