@@ -474,6 +474,9 @@
           </div>
 
           <div class="flex items-center gap-2">
+            <button onclick="openSystemDrivesModal()" class="btn btn-secondary text-xs px-3 py-1.5 shadow-md flex items-center gap-1.5 border-amber-500/40 text-amber-300 hover:text-white font-bold" title="مشاهده کلیه هاردها، درایوهای ویندوز (NTFS) و حافظه‌های سرور">
+              <span>💽 سایر هاردها و درایوها</span>
+            </button>
             <button onclick="promptLoadFileIntoDocker()" class="btn btn-secondary text-xs px-3 py-1.5 shadow-md flex items-center gap-1.5 border-blue-500/30 text-blue-300 hover:text-white" title="بارگذاری و ایمپورت مستقیم فایل ایزو/تار در داکر">
               <span>🐳 لود ایزو/تار در داکر</span>
             </button>
@@ -520,6 +523,51 @@
             <button onclick="refreshFileManager()" class="btn btn-outline text-xs px-2.5 py-1.5" title="بروزرسانی">
               🔄
             </button>
+          </div>
+        </div>
+
+        <!-- Storage & Partitions Quick Access Bar -->
+        <div class="glass-panel p-3 space-y-2 border-indigo-500/20 bg-slate-900/60">
+          <div class="flex items-center justify-between text-xs pb-2 border-b border-white/5">
+            <div class="flex items-center gap-2">
+              <span class="text-base">💽</span>
+              <span class="font-bold text-white">هاردها و پارتیشن‌های سیستم (System Drives & Storage)</span>
+              <span id="drives-count-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">در حال اسکن...</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="refreshSystemDrives(true)" class="btn btn-secondary text-[11px] px-2.5 py-1 flex items-center gap-1 font-bold" title="بروزرسانی فهرست درایوها">
+                🔄 اسکن هاردها
+              </button>
+              <button type="button" onclick="openSystemDrivesModal()" class="btn btn-secondary text-[11px] px-2.5 py-1 text-amber-300 hover:text-white flex items-center gap-1 font-bold">
+                ⚙️ مدیریت پیشرفته هاردها
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Location Shortcuts & Partition Pills -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar" id="drives-quick-pills">
+            <!-- Fixed OS shortcuts -->
+            <button type="button" onclick="navigateToFileLocation('~')" class="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-white/5 flex items-center gap-1.5 shrink-0 transition" title="پوشه خانه کاربر (~)">
+              <span>🏠</span>
+              <span class="font-bold">خانه (Home)</span>
+            </button>
+            <button type="button" onclick="navigateToFileLocation('/')" class="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-white/5 flex items-center gap-1.5 shrink-0 transition" title="ریشه لینوکس (/)">
+              <span>🖥️</span>
+              <span class="font-bold">ریشه (/)</span>
+            </button>
+            <button type="button" onclick="navigateToFileLocation('/media')" class="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-white/5 flex items-center gap-1.5 shrink-0 transition" title="پوشه درایوهای متصل (/media)">
+              <span>📁</span>
+              <span>درایوها (/media)</span>
+            </button>
+            <button type="button" onclick="navigateToFileLocation('/mnt')" class="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-white/5 flex items-center gap-1.5 shrink-0 transition" title="مسیر مونت‌ها (/mnt)">
+              <span>📁</span>
+              <span>مونت‌ها (/mnt)</span>
+            </button>
+            <div class="h-5 w-[1px] bg-white/10 shrink-0 mx-1"></div>
+            <!-- Dynamic Partition Cards injected by JS -->
+            <div id="dynamic-partitions-container" class="flex items-center gap-2 shrink-0">
+              <span class="text-[11px] text-slate-500 italic">در حال بارگذاری هاردها...</span>
+            </div>
           </div>
         </div>
 
@@ -2347,6 +2395,43 @@
         </div>
         <button type="button" onclick="startBatchUpload()" id="btn-start-upload" class="btn btn-primary text-xs px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-2 shadow-lg disabled:opacity-40 disabled:cursor-not-allowed">
           <span>🚀</span> شروع آپلود به لینوکس
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: System Hard Drives & Partitions Manager -->
+  <div id="modal-system-drives" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-3xl p-6 bg-[#0a0e17]/95 border-white/10 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">💽</span>
+          <div>
+            <h3 class="font-bold text-white text-base">مدیریت هاردها، درایوها و پارتیشن‌های سرور</h3>
+            <p class="text-[11px] text-slate-400">شناسایی و اتصال ۱-کلیکه کلیه هارد‌های داخلی، درایوهای ویندوز (NTFS)، حافظه‌های جانبی و فلش‌ها</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-system-drives')" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+
+      <div class="flex items-center justify-between text-xs">
+        <span class="text-slate-300">درایوهای ذخیره‌سازی زیر روی کامپیوتر لینوکسی شناسایی شده‌اند:</span>
+        <button onclick="refreshSystemDrives(true)" class="btn btn-secondary text-xs px-3 py-1.5 font-bold flex items-center gap-1.5">
+          🔄 اسکن مجدد هاردها
+        </button>
+      </div>
+
+      <!-- Disks & Partitions List -->
+      <div id="system-drives-list" class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+        <div class="text-center py-8 text-slate-500 text-xs">
+          در حال بررسی و اسکن تجهیزات ذخیره‌سازی لینوکس...
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-white/10 text-xs">
+        <span class="text-[11px] text-slate-500 font-mono">پشتیبانی کامل از فرمت‌های NTFS، FAT32، EXT4، BTRFS، exFAT و XFS</span>
+        <button onclick="closeModal('modal-system-drives')" class="btn btn-outline text-xs px-4 py-2">
+          بستن
         </button>
       </div>
     </div>

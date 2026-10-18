@@ -102,7 +102,10 @@ function switchTab(tabName) {
 
     if (tabName === 'containers') applyContainersFilter();
     if (tabName === 'servers') loadServersManagerCards();
-    if (tabName === 'files') refreshFileManager();
+    if (tabName === 'files') {
+        refreshFileManager();
+        refreshSystemDrives(false);
+    }
     if (tabName === 'terminal') {
         const input = document.getElementById('term-input');
         if (input) setTimeout(() => input.focus(), 100);
@@ -1639,6 +1642,232 @@ function navigateFileGo() {
 
 function handleFilePathKey(e) {
     if (e.key === 'Enter') navigateFileGo();
+}
+
+// ----------------- SYSTEM STORAGE, DRIVES & PARTITIONS -----------------
+let cachedSystemDrives = { disks: [], partitions: [] };
+
+async function refreshSystemDrives(showToastMsg = false) {
+    if (!isConnected) return;
+    const badge = document.getElementById('drives-count-badge');
+    if (badge) badge.textContent = "در حال اسکن هاردها...";
+
+    try {
+        const res = await callApi('file_list_system_drives');
+        if (res && res.success) {
+            cachedSystemDrives = res;
+            renderDrivesQuickBar(res.partitions || []);
+            renderDrivesModalList(res);
+            if (showToastMsg) showToast("فهرست هاردها و پارتیشن‌ها بروزرسانی شد", "info");
+        } else {
+            if (badge) badge.textContent = "خطا در اسکن";
+            if (showToastMsg) showToast("خطا در اسکن درایوها: " + (res ? res.error : "ناشناخته"), "error");
+        }
+    } catch (e) {
+        if (badge) badge.textContent = "خطا در ارتباط";
+        console.error("Error refreshing drives:", e);
+    }
+}
+
+function renderDrivesQuickBar(partitions) {
+    const badge = document.getElementById('drives-count-badge');
+    const container = document.getElementById('dynamic-partitions-container');
+    if (!container) return;
+
+    if (!partitions || partitions.length === 0) {
+        if (badge) badge.textContent = "پارتیشنی یافت نشد";
+        container.innerHTML = '<span class="text-[11px] text-slate-500 italic">هیچ درایو جانبی یافت نشد.</span>';
+        return;
+    }
+
+    if (badge) {
+        const mountedCount = partitions.filter(p => p.mounted).length;
+        badge.textContent = `${partitions.length} پارتیشن (${mountedCount} متصل)`;
+    }
+
+    // Filter out swap for quick bar
+    const visibleParts = partitions.filter(p => !p.is_swap);
+
+    container.innerHTML = visibleParts.map(part => {
+        let icon = '💽';
+        if (part.fstype === 'ntfs') icon = '🪟';
+        else if (['vfat', 'fat32', 'exfat'].includes(part.fstype)) icon = '🔌';
+        else if (['ext4', 'ext3', 'btrfs', 'xfs'].includes(part.fstype)) icon = '🐧';
+
+        const isMounted = part.mounted;
+        const mp = part.mountpoint;
+        const title = part.friendly_label || part.name;
+        const sub = `${part.fstype ? part.fstype.toUpperCase() : 'DRIVE'} • ${part.size_formatted || ''}`;
+
+        return `
+          <div class="flex items-center gap-2 p-1.5 px-2.5 rounded-lg border ${isMounted ? 'bg-slate-800/90 border-emerald-500/30' : 'bg-slate-900/80 border-white/5'} shrink-0 text-xs shadow-sm">
+            <span class="text-base">${icon}</span>
+            <div class="leading-tight">
+              <div class="font-bold text-slate-100 flex items-center gap-1.5">
+                <span>${escapeHtml(title)}</span>
+                ${isMounted ? '<span class="text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-bold">متصل</span>' : '<span class="text-[9px] px-1 py-0.2 rounded bg-slate-800 text-slate-400">آزاد</span>'}
+              </div>
+              <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(sub)}</div>
+            </div>
+            <div class="flex items-center gap-1 mr-1">
+              ${isMounted ? `
+                <button type="button" onclick="loadRemoteDirectory('${escapeHtml(mp)}')" class="btn btn-secondary text-[10px] px-2 py-0.5 font-bold hover:text-emerald-300" title="باز کردن این هارد در فایل‌منیجر (${escapeHtml(mp)})">
+                  📂 باز کردن
+                </button>
+                ${!part.is_root ? `
+                  <button type="button" onclick="unmountPartition('${escapeHtml(part.device)}', '${escapeHtml(title)}')" class="text-slate-500 hover:text-rose-400 p-1 text-[11px]" title="جدا کردن (Unmount)">
+                    ⏏️
+                  </button>
+                ` : ''}
+              ` : `
+                <button type="button" onclick="mountPartition('${escapeHtml(part.device)}', '${escapeHtml(title)}')" class="btn btn-primary text-[10px] px-2.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 font-bold text-white shadow" title="اتصال و باز کردن این درایو">
+                  ⚡ اتصال و باز کردن
+                </button>
+              `}
+            </div>
+          </div>
+        `;
+    }).join('');
+}
+
+function renderDrivesModalList(data) {
+    const listEl = document.getElementById('system-drives-list');
+    if (!listEl) return;
+
+    const partitions = data.partitions || [];
+
+    if (partitions.length === 0) {
+        listEl.innerHTML = '<div class="text-center py-8 text-slate-500 text-xs">هیچ هارد یا پارتیشنی شناسایی نشد.</div>';
+        return;
+    }
+
+    let html = '';
+
+    partitions.forEach(part => {
+        let icon = '💽';
+        if (part.fstype === 'ntfs') icon = '🪟';
+        else if (['vfat', 'fat32', 'exfat'].includes(part.fstype)) icon = '🔌';
+        else if (['ext4', 'ext3', 'btrfs', 'xfs'].includes(part.fstype)) icon = '🐧';
+
+        const isMounted = part.mounted;
+        const mp = part.mountpoint;
+        const title = part.friendly_label || part.name;
+
+        html += `
+          <div class="p-3.5 rounded-xl border ${isMounted ? 'bg-slate-900/90 border-emerald-500/20' : 'bg-slate-900/50 border-white/5'} space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5">
+                <span class="text-2xl">${icon}</span>
+                <div>
+                  <div class="font-bold text-white text-sm flex items-center gap-2">
+                    <span>${escapeHtml(title)}</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded font-mono ${isMounted ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'}">
+                      ${isMounted ? '🟢 متصل (Mounted)' : '⚪ آماده اتصال (Unmounted)'}
+                    </span>
+                    ${part.fstype ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 font-mono font-bold">${part.fstype.toUpperCase()}</span>` : ''}
+                  </div>
+                  <div class="text-[11px] text-slate-400 font-mono mt-0.5 flex items-center gap-2">
+                    <span>دستگاه: <strong class="text-slate-300">${escapeHtml(part.device)}</strong></span>
+                    ${part.disk_model ? `<span>• مدل هارد: ${escapeHtml(part.disk_model)}</span>` : ''}
+                    <span>• حجم: <strong class="text-slate-200">${escapeHtml(part.size_formatted || '')}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                ${isMounted ? `
+                  <button type="button" onclick="loadRemoteDirectory('${escapeHtml(mp)}'); closeModal('modal-system-drives');" class="btn btn-primary text-xs px-3.5 py-1.5 bg-sky-600 hover:bg-sky-500 font-bold flex items-center gap-1.5">
+                    <span>📂</span> باز کردن در فایل‌منیجر
+                  </button>
+                  ${!part.is_root ? `
+                    <button type="button" onclick="unmountPartition('${escapeHtml(part.device)}', '${escapeHtml(title)}')" class="btn btn-outline text-xs px-2.5 py-1.5 text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1">
+                      <span>⏏️</span> جدا کردن (Unmount)
+                    </button>
+                  ` : ''}
+                ` : `
+                  <button type="button" onclick="mountPartition('${escapeHtml(part.device)}', '${escapeHtml(title)}')" class="btn btn-primary text-xs px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 shadow-lg">
+                    <span>⚡</span> اتصال و باز کردن (Mount)
+                  </button>
+                `}
+              </div>
+            </div>
+
+            <!-- Path & Usage Stats if mounted -->
+            ${isMounted ? `
+              <div class="pt-2 border-t border-white/5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div class="flex items-center gap-1.5 text-slate-400 font-mono">
+                  <span>مسیر روی سرور:</span>
+                  <span class="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">${escapeHtml(mp)}</span>
+                </div>
+                ${part.used_percent ? `
+                  <div class="flex items-center gap-2 text-[11px] text-slate-300 font-mono">
+                    <span>مصرف: ${escapeHtml(part.used_formatted)} از ${escapeHtml(part.size_formatted)} (${part.used_percent})</span>
+                    <span class="text-slate-400">| فضای خالی: <strong class="text-emerald-400">${escapeHtml(part.avail_formatted)}</strong></span>
+                  </div>
+                ` : ''}
+              </div>
+            ` : `
+              <div class="text-[11px] text-slate-500 italic">
+                این پارتیشن روی سرور متصل نشده است. برای دسترسی به فایل‌ها، روی دکمه «اتصال و باز کردن» کلیک کنید.
+              </div>
+            `}
+          </div>
+        `;
+    });
+
+    listEl.innerHTML = html;
+}
+
+function openSystemDrivesModal() {
+    if (!isConnected) {
+        showToast("ابتدا به سرور متصل شوید", "error");
+        return;
+    }
+    openModal('modal-system-drives');
+    refreshSystemDrives(false);
+}
+
+function navigateToFileLocation(loc) {
+    if (!isConnected) return;
+    loadRemoteDirectory(loc);
+}
+
+async function mountPartition(devicePath, title) {
+    if (!isConnected) return;
+    showToast(`در حال اتصال درایو ${title || devicePath}...`, "info");
+    try {
+        const res = await callApi('file_mount_drive', devicePath);
+        if (res && res.success && res.mountpoint) {
+            showToast(res.message || "درایو با موفقیت متصل شد", "success");
+            await refreshSystemDrives(false);
+            loadRemoteDirectory(res.mountpoint);
+            closeModal('modal-system-drives');
+        } else {
+            showToast("خطا در اتصال درایو: " + (res ? res.error : "ناشناخته"), "error");
+        }
+    } catch (e) {
+        showToast("خطا در اتصال: " + e.message, "error");
+    }
+}
+
+async function unmountPartition(devicePath, title) {
+    if (!isConnected) return;
+    if (!confirm(`آیا از جدا کردن درایو «${title || devicePath}» مطمئن هستید؟`)) {
+        return;
+    }
+    showToast(`در حال جدا کردن ${title || devicePath}...`, "info");
+    try {
+        const res = await callApi('file_unmount_drive', devicePath);
+        if (res && res.success) {
+            showToast(res.message || "پارتیشن جدا شد", "success");
+            await refreshSystemDrives(false);
+            loadRemoteDirectory('~');
+        } else {
+            showToast("خطا در جدا کردن درایو: " + (res ? res.error : "ناشناخته"), "error");
+        }
+    } catch (e) {
+        showToast("خطا در جدا کردن: " + e.message, "error");
+    }
 }
 
 // ----------------- MULTI-FILE & MULTI-FOLDER WINDOWS UPLOAD -----------------
@@ -4775,6 +5004,25 @@ function mockApiResponse(method, args) {
     if (method === 'file_upload_batch') return { success: true, message: 'کلیه فایل‌ها و پوشه‌ها با موفقیت آپلود شدند' };
     if (method === 'file_get_upload_progress') return { active: false };
     if (method === 'file_cancel_upload') return { success: true, message: 'آپلود لغو شد' };
+    if (method === 'file_list_system_drives') {
+        return {
+            success: true,
+            disks: [
+                { name: 'sda', model: 'Samsung SSD 870 500GB', size: 500107862016, size_formatted: '500.1 GB', removable: false },
+                { name: 'sdb', model: 'WDC WD10EZEX 1TB', size: 1000204886016, size_formatted: '1.0 TB', removable: false }
+            ],
+            partitions: [
+                { name: 'sda2', device: '/dev/sda2', label: 'Linux Mint', friendly_label: 'پارتیشن اصلی لینوکس (Root /)', fstype: 'ext4', size: 499998785536, size_formatted: '500.0 GB', mounted: true, mountpoint: '/', is_root: true, is_swap: false, disk_model: 'Samsung SSD 870', used_formatted: '42.1 GB', avail_formatted: '430.5 GB', used_percent: '9%' },
+                { name: 'sdb1', device: '/dev/sdb1', label: 'Data', friendly_label: 'درایو ویندوز (sdb1 - Data)', fstype: 'ntfs', size: 1000202788864, size_formatted: '1.0 TB', mounted: false, mountpoint: '', is_root: false, is_swap: false, disk_model: 'WDC WD10EZEX', used_formatted: '0 B', avail_formatted: '0 B', used_percent: '' }
+            ]
+        };
+    }
+    if (method === 'file_mount_drive') {
+        return { success: true, mountpoint: '/media/drive_sdb1', message: 'درایو با موفقیت در /media/drive_sdb1 متصل شد' };
+    }
+    if (method === 'file_unmount_drive') {
+        return { success: true, message: 'پارتیشن با موفقیت جدا شد' };
+    }
     if (method === 'rdp_check_status') return { connected: true, installed: true, running: true, host: '100.85.120.45', port: 3389, username: 'aboalfzl', local_user_active: false };
     if (method === 'rdp_launch_client') return { success: true, message: 'کلاینت ریموت دسکتاپ ویندوز باز شد' };
     if (method === 'rdp_setup_service') return { success: true, message: 'سرویس xrdp با موفقیت برای میزکار Cinnamon کانفیگ شد' };

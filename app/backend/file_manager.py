@@ -408,3 +408,218 @@ echo "started"
             return f"{round(size_bytes / (1024 ** 2), 1)} MB"
         else:
             return f"{round(size_bytes / (1024 ** 3), 2)} GB"
+
+    def list_system_drives(self):
+        """Scans and returns all physical disks, partitions, and storage volumes on the Linux system."""
+        if not self.ssh.is_connected:
+            return {"success": False, "error": "SSH متصل نیست", "disks": [], "partitions": []}
+
+        script = """python3 -c "
+import json, subprocess, os
+
+def run_cmd(args):
+    try:
+        p = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=8)
+        return p.stdout.strip()
+    except Exception:
+        return ''
+
+lsblk_out = run_cmd(['lsblk', '-b', '-J', '-o', 'NAME,KNAME,PATH,SIZE,FSTYPE,LABEL,MOUNTPOINT,MODEL,TYPE,RM,RO'])
+data = {}
+if lsblk_out:
+    try:
+        data = json.loads(lsblk_out)
+    except Exception:
+        data = {}
+
+df_out = run_cmd(['df', '-B1', '-P'])
+df_map = {}
+if df_out:
+    for line in df_out.splitlines()[1:]:
+        parts = line.split()
+        if len(parts) >= 6:
+            fs, total, used, avail, pct, mp = parts[0], parts[1], parts[2], parts[3], parts[4], ' '.join(parts[5:])
+            df_map[mp] = {
+                'total': int(total) if total.isdigit() else 0,
+                'used': int(used) if used.isdigit() else 0,
+                'avail': int(avail) if avail.isdigit() else 0,
+                'pct': pct
+            }
+
+def format_sz(b):
+    if not b or b <= 0: return '0 B'
+    if b < 1024: return f'{b} B'
+    if b < 1024*1024: return f'{b/1024:.1f} KB'
+    if b < 1024*1024*1024: return f'{b/(1024*1024):.1f} MB'
+    return f'{b/(1024*1024*1024):.1f} GB'
+
+disks = []
+partitions = []
+
+def process_part(p_node, parent_model):
+    p_name = p_node.get('name') or ''
+    p_path = p_node.get('path') or f'/dev/{p_name}'
+    p_size = int(p_node.get('size') or 0)
+    p_fstype = (p_node.get('fstype') or '').strip().lower()
+    p_label = (p_node.get('label') or '').strip()
+    p_mp = p_node.get('mountpoint') or ''
+    p_type = p_node.get('type') or ''
+
+    if p_type in ('loop', 'rom'):
+        return
+
+    is_mounted = bool(p_mp and os.path.isdir(p_mp))
+    df_info = df_map.get(p_mp, {})
+
+    friendly_label = p_label
+    if not friendly_label:
+        if p_mp == '/':
+            friendly_label = 'پارتیشن ریشه سیستم (Root /)'
+        elif p_mp.startswith('/home'):
+            friendly_label = 'پارتیشن خانه (Home)'
+        elif p_fstype in ('ntfs', 'vfat', 'exfat'):
+            friendly_label = f'درایو ویندوز ({p_name})'
+        elif p_fstype:
+            friendly_label = f'پارتیشن {p_fstype.upper()} ({p_name})'
+        else:
+            friendly_label = f'پارتیشن ({p_name})'
+
+    partitions.append({
+        'name': p_name,
+        'device': p_path,
+        'label': p_label,
+        'friendly_label': friendly_label,
+        'fstype': p_fstype,
+        'size': p_size,
+        'size_formatted': format_sz(p_size),
+        'mounted': is_mounted,
+        'mountpoint': p_mp,
+        'is_root': p_mp == '/',
+        'is_swap': p_fstype == 'swap',
+        'is_boot': p_mp.startswith('/boot') if p_mp else False,
+        'disk_model': parent_model,
+        'used_bytes': df_info.get('used', 0),
+        'avail_bytes': df_info.get('avail', 0),
+        'used_percent': df_info.get('pct', ''),
+        'used_formatted': format_sz(df_info.get('used', 0)),
+        'avail_formatted': format_sz(df_info.get('avail', 0))
+    })
+
+for dev in data.get('blockdevices', []):
+    d_name = dev.get('name') or ''
+    d_model = (dev.get('model') or '').strip()
+    d_size = int(dev.get('size') or 0)
+    d_type = dev.get('type') or ''
+    d_rm = bool(dev.get('rm', False))
+
+    if d_type == 'disk':
+        disks.append({
+            'name': d_name,
+            'model': d_model or f'Disk {d_name}',
+            'size': d_size,
+            'size_formatted': format_sz(d_size),
+            'removable': d_rm
+        })
+
+    children = dev.get('children', [])
+    if children:
+        for c in children:
+            process_part(c, d_model)
+            for sub_c in c.get('children', []):
+                process_part(sub_c, d_model)
+    elif d_type == 'part':
+        process_part(dev, d_model)
+
+print(json.dumps({'success': True, 'disks': disks, 'partitions': partitions}))
+" 2>/dev/null
+"""
+        res = self.ssh.execute_command(script, timeout=10)
+        if res.get("success") and res.get("stdout", "").strip():
+            try:
+                import json
+                parsed = json.loads(res["stdout"].strip())
+                return parsed
+            except Exception as e:
+                pass
+
+        return {"success": False, "error": res.get("stderr") or "خطا در اسکن هاردها", "disks": [], "partitions": []}
+
+    def mount_drive(self, device_path, custom_mountpoint=None):
+        """Mounts a block device partition to Linux filesystem and returns its mountpoint."""
+        if not self.ssh.is_connected:
+            return {"success": False, "error": "SSH متصل نیست"}
+
+        if not device_path:
+            return {"success": False, "error": "مسیر درایو مشخص نشده است"}
+
+        clean_device = shlex.quote(device_path.strip())
+
+        # 1. Check if already mounted
+        check_cmd = f"findmnt -n -o TARGET {clean_device} 2>/dev/null"
+        check_res = self.ssh.execute_command(check_cmd, timeout=5)
+        if check_res.get("success") and check_res.get("stdout", "").strip():
+            existing_mp = check_res["stdout"].strip().splitlines()[0]
+            return {"success": True, "mountpoint": existing_mp, "message": f"این درایو قبلاً در مسیر {existing_mp} متصل شده است"}
+
+        # 2. Try udisksctl first (non-root standard on modern Linux desktops)
+        udisks_cmd = f"udisksctl mount -b {clean_device} 2>&1"
+        u_res = self.ssh.execute_command(udisks_cmd, timeout=10)
+        if u_res.get("success"):
+            out = u_res.get("stdout", "")
+            match = re.search(r"at\s+([^\s\.\,]+)", out)
+            if match:
+                target_mp = match.group(1).strip()
+                return {"success": True, "mountpoint": target_mp, "message": f"درایو با موفقیت در {target_mp} متصل شد"}
+
+        # 3. Fallback: sudo mount to /media/drive_NAME
+        p_name = os.path.basename(device_path.strip())
+        target_dir = custom_mountpoint if custom_mountpoint else f"/media/drive_{p_name}"
+        q_target = shlex.quote(target_dir)
+
+        # Detect filesystem type
+        fs_cmd = f"blkid -s TYPE -o value {clean_device} 2>/dev/null"
+        fs_res = self.ssh.execute_command(fs_cmd, timeout=5)
+        fstype = fs_res.get("stdout", "").strip().lower()
+
+        # Mount command
+        if fstype in ("ntfs", "vfat", "exfat"):
+            mount_cmd = f"mkdir -p {q_target} && (mount -t ntfs-3g {clean_device} {q_target} -o uid=$(id -u),gid=$(id -g),umask=022 2>&1 || mount {clean_device} {q_target} -o uid=$(id -u),gid=$(id -g),umask=022 2>&1 || mount {clean_device} {q_target} 2>&1) && chmod 777 {q_target} 2>/dev/null"
+        else:
+            mount_cmd = f"mkdir -p {q_target} && mount {clean_device} {q_target} 2>&1 && chmod 777 {q_target} 2>/dev/null"
+
+        m_res = self.ssh.execute_sudo_command(mount_cmd, timeout=15)
+        if not m_res.get("success") and "already mounted" not in m_res.get("stderr", "").lower():
+            # Check if it actually mounted despite returncode
+            verify_cmd = f"findmnt -n -o TARGET {clean_device} 2>/dev/null"
+            v_res = self.ssh.execute_command(verify_cmd, timeout=5)
+            if not (v_res.get("success") and v_res.get("stdout", "").strip()):
+                return {"success": False, "error": m_res.get("stderr") or m_res.get("stdout") or "خطا در اتصال پارتیشن"}
+
+        return {"success": True, "mountpoint": target_dir, "message": f"درایو با موفقیت در {target_dir} متصل شد"}
+
+    def unmount_drive(self, device_path_or_mountpoint):
+        """Safely unmounts a partition."""
+        if not self.ssh.is_connected:
+            return {"success": False, "error": "SSH متصل نیست"}
+
+        if not device_path_or_mountpoint:
+            return {"success": False, "error": "مسیر درایو مشخص نشده است"}
+
+        target = device_path_or_mountpoint.strip()
+        if target in ("/", "/boot", "/home", "/etc", "/usr", "/var"):
+            return {"success": False, "error": "پارتیشن‌های اصلی و سیستمی لینوکس امکان جدا شدن ندارند"}
+
+        q_target = shlex.quote(target)
+
+        # 1. Try udisksctl
+        u_cmd = f"udisksctl unmount -b {q_target} 2>&1 || udisksctl unmount -p {q_target} 2>&1"
+        u_res = self.ssh.execute_command(u_cmd, timeout=8)
+        if u_res.get("success") and "Unmounted" in u_res.get("stdout", ""):
+            return {"success": True, "message": "پارتیشن با موفقیت جدا شد"}
+
+        # 2. Sudo umount fallback
+        umount_cmd = f"umount -l {q_target}"
+        res = self.ssh.execute_sudo_command(umount_cmd, timeout=10)
+        if res.get("success"):
+            return {"success": True, "message": "پارتیشن با موفقیت جدا شد"}
+        return {"success": False, "error": res.get("stderr") or res.get("stdout") or "خطا در جدا کردن پارتیشن"}

@@ -474,6 +474,15 @@ class ApiBridge:
     def file_download_from_url(self, file_url, target_dir=None, filename=None):
         return self.file_mgr.download_from_url(file_url, target_dir, filename)
 
+    def file_list_system_drives(self):
+        return self.file_mgr.list_system_drives()
+
+    def file_mount_drive(self, device_path, custom_mountpoint=None):
+        return self.file_mgr.mount_drive(device_path, custom_mountpoint)
+
+    def file_unmount_drive(self, device_path_or_mountpoint):
+        return self.file_mgr.unmount_drive(device_path_or_mountpoint)
+
     def _format_size(self, size_bytes):
         if size_bytes < 1024:
             return f"{size_bytes} B"
