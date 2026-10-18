@@ -1641,22 +1641,315 @@ function handleFilePathKey(e) {
     if (e.key === 'Enter') navigateFileGo();
 }
 
-async function triggerUploadFileInteractive() {
-    if (!isConnected) return;
-    showToast("در حال انتخاب فایل از کامپیوتر شما...", "info");
+// ----------------- MULTI-FILE & MULTI-FOLDER WINDOWS UPLOAD -----------------
+let uploadQueue = []; // array of { path, name, is_dir, size, size_formatted, file_count }
+let isUploading = false;
+let uploadProgressInterval = null;
+
+function toggleUploadDropdown(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById('upload-dropdown-menu');
+    if (!menu) return;
+    const isHidden = menu.classList.contains('hidden');
+    if (isHidden) {
+        menu.classList.remove('hidden');
+        setTimeout(() => {
+            document.addEventListener('click', closeUploadDropdownOnClickOutside);
+        }, 10);
+    } else {
+        closeUploadDropdown();
+    }
+}
+
+function closeUploadDropdown() {
+    const menu = document.getElementById('upload-dropdown-menu');
+    if (menu) menu.classList.add('hidden');
+    document.removeEventListener('click', closeUploadDropdownOnClickOutside);
+}
+
+function closeUploadDropdownOnClickOutside(e) {
+    const container = document.getElementById('upload-dropdown-container');
+    if (container && !container.contains(e.target)) {
+        closeUploadDropdown();
+    }
+}
+
+function openUploadHubModal() {
+    if (!isConnected) {
+        showToast("ابتدا به سرور متصل شوید", "error");
+        return;
+    }
+    closeUploadDropdown();
+    const destEl = document.getElementById('upload-hub-dest');
+    if (destEl) destEl.textContent = currentRemotePath || '/home';
+    renderUploadQueue();
+    openModal('modal-upload-hub');
+}
+
+function closeUploadHubModal() {
+    if (isUploading) {
+        if (!confirm("آپلود در حال انجام است. آیا می‌خواهید پنجره را ببندید؟ (عملیات در پس‌زمینه ادامه دارد یا می‌توانید لغو کنید)")) {
+            return;
+        }
+    }
+    closeModal('modal-upload-hub');
+}
+
+async function quickUploadPickFiles() {
+    closeUploadDropdown();
+    if (!isConnected) {
+        showToast("ابتدا به سرور متصل شوید", "error");
+        return;
+    }
+    showToast("پنجره انتخاب چند فایل باز شد...", "info");
     try {
-        const res = await callApi('file_upload_interactive', currentRemotePath);
-        if (res && res.success) {
-            showToast(res.message || "فایل با موفقیت آپلود شد", "success");
-            await refreshFileManager();
-        } else if (res && res.cancelled) {
-            // Cancelled dialog
-        } else {
-            showToast("خطا در آپلود فایل: " + (res.error || 'ناشناخته'), "error");
+        const res = await callApi('file_pick_items', 'files');
+        if (res && res.success && res.items && res.items.length > 0) {
+            addItemsToQueue(res.items);
+            openUploadHubModal();
         }
     } catch (e) {
-        showToast("خطا در آپلود: " + e.message, "error");
+        showToast("خطا در انتخاب فایل‌ها: " + e.message, "error");
     }
+}
+
+async function quickUploadPickFolder() {
+    closeUploadDropdown();
+    if (!isConnected) {
+        showToast("ابتدا به سرور متصل شوید", "error");
+        return;
+    }
+    showToast("پنجره انتخاب پوشه باز شد...", "info");
+    try {
+        const res = await callApi('file_pick_items', 'folder');
+        if (res && res.success && res.items && res.items.length > 0) {
+            addItemsToQueue(res.items);
+            openUploadHubModal();
+        }
+    } catch (e) {
+        showToast("خطا در انتخاب پوشه: " + e.message, "error");
+    }
+}
+
+async function addFilesToUploadQueue() {
+    if (isUploading) return;
+    try {
+        const res = await callApi('file_pick_items', 'files');
+        if (res && res.success && res.items && res.items.length > 0) {
+            addItemsToQueue(res.items);
+        }
+    } catch (e) {
+        showToast("خطا در انتخاب فایل‌ها: " + e.message, "error");
+    }
+}
+
+async function addFolderToUploadQueue() {
+    if (isUploading) return;
+    try {
+        const res = await callApi('file_pick_items', 'folder');
+        if (res && res.success && res.items && res.items.length > 0) {
+            addItemsToQueue(res.items);
+        }
+    } catch (e) {
+        showToast("خطا در انتخاب پوشه: " + e.message, "error");
+    }
+}
+
+function addItemsToQueue(newItems) {
+    if (!Array.isArray(newItems)) return;
+    newItems.forEach(item => {
+        if (!uploadQueue.some(q => q.path === item.path)) {
+            uploadQueue.push(item);
+        }
+    });
+    renderUploadQueue();
+}
+
+function removeQueueItem(index) {
+    if (isUploading) return;
+    uploadQueue.splice(index, 1);
+    renderUploadQueue();
+}
+
+function clearUploadQueue() {
+    if (isUploading) return;
+    uploadQueue = [];
+    renderUploadQueue();
+}
+
+function renderUploadQueue() {
+    const listEl = document.getElementById('upload-queue-list');
+    const countEl = document.getElementById('upload-queue-count');
+    const totalSizeEl = document.getElementById('upload-queue-total-size');
+    const startBtn = document.getElementById('btn-start-upload');
+
+    if (!listEl) return;
+
+    if (countEl) countEl.textContent = uploadQueue.length;
+
+    let totalBytes = 0;
+    uploadQueue.forEach(i => totalBytes += (i.size || 0));
+    if (totalSizeEl) totalSizeEl.textContent = formatBytes(totalBytes);
+
+    if (uploadQueue.length === 0) {
+        listEl.innerHTML = `
+          <div id="upload-queue-empty" class="text-center py-8 text-slate-500 text-xs">
+            <span class="text-3xl block mb-2 opacity-40">📂</span>
+            هنوز فایلی یا پوشه‌ای انتخاب نشده است. از دکمه‌های بالا برای انتخاب چند فایل یا پوشه استفاده کنید.
+          </div>
+        `;
+        if (startBtn) startBtn.disabled = true;
+        return;
+    }
+
+    if (startBtn) startBtn.disabled = isUploading;
+
+    let html = '';
+    uploadQueue.forEach((item, idx) => {
+        const icon = item.is_dir ? '📁' : '📄';
+        const typeBadge = item.is_dir
+            ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">پوشه</span>'
+            : '<span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-bold">فایل</span>';
+        const details = item.is_dir
+            ? `${item.file_count || 0} فایل (${item.size_formatted || '0 B'})`
+            : (item.size_formatted || '0 B');
+
+        html += `
+          <div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-800/40 transition">
+            <div class="flex items-center gap-2.5 truncate max-w-[75%]">
+              <span class="text-lg">${icon}</span>
+              <div class="truncate">
+                <div class="font-bold text-slate-200 truncate flex items-center gap-2">
+                  <span>${escapeHtml(item.name)}</span>
+                  ${typeBadge}
+                </div>
+                <div class="text-[10px] text-slate-400 font-mono truncate" title="${escapeHtml(item.path)}">${escapeHtml(item.path)}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-[11px] font-mono text-slate-300">${details}</span>
+              ${!isUploading ? `<button type="button" onclick="removeQueueItem(${idx})" class="text-slate-500 hover:text-rose-400 p-1" title="حذف از صف">✕</button>` : ''}
+            </div>
+          </div>
+        `;
+    });
+
+    listEl.innerHTML = html;
+}
+
+function formatBytes(bytes) {
+    if (!bytes || bytes <= 0) return '0 B';
+    if (bytes < 1024) return bytes + ' B';
+    else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    else if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    else return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+}
+
+// Global hook called directly from Python evaluate_js
+window.onUploadProgress = function(data) {
+    updateUploadProgressUI(data);
+};
+
+function updateUploadProgressUI(data) {
+    if (!data) return;
+    const progressBox = document.getElementById('upload-progress-box');
+    const curFileEl = document.getElementById('upload-progress-current-file');
+    const percentEl = document.getElementById('upload-progress-percent');
+    const fillEl = document.getElementById('upload-progress-bar-fill');
+    const countEl = document.getElementById('upload-progress-files-count');
+    const bytesEl = document.getElementById('upload-progress-bytes');
+
+    if (progressBox) progressBox.classList.remove('hidden');
+    if (curFileEl) curFileEl.textContent = data.current_file || 'در حال انتقال...';
+    const pct = Math.min(100, Math.max(0, data.percent || 0));
+    if (percentEl) percentEl.textContent = pct + '%';
+    if (fillEl) fillEl.style.width = pct + '%';
+    if (countEl && data.total_files) countEl.textContent = `فایل ${data.current_index || 0} از ${data.total_files}`;
+    if (bytesEl && data.total_bytes) bytesEl.textContent = `${formatBytes(data.bytes_transferred || 0)} / ${formatBytes(data.total_bytes)}`;
+}
+
+async function startBatchUpload() {
+    if (uploadQueue.length === 0 || isUploading) return;
+    if (!isConnected) {
+        showToast("ابتدا به سرور متصل شوید", "error");
+        return;
+    }
+
+    isUploading = true;
+    renderUploadQueue();
+
+    const startBtn = document.getElementById('btn-start-upload');
+    const cancelBtn = document.getElementById('btn-cancel-upload');
+    const addFilesBtn = document.getElementById('btn-add-files-hub');
+    const addFolderBtn = document.getElementById('btn-add-folder-hub');
+    const clearBtn = document.getElementById('btn-clear-queue');
+    const progressBox = document.getElementById('upload-progress-box');
+
+    if (startBtn) {
+        startBtn.disabled = true;
+        startBtn.innerHTML = '<span>⏳</span> در حال آپلود...';
+    }
+    if (cancelBtn) cancelBtn.classList.remove('hidden');
+    if (addFilesBtn) addFilesBtn.disabled = true;
+    if (addFolderBtn) addFolderBtn.disabled = true;
+    if (clearBtn) clearBtn.disabled = true;
+    if (progressBox) progressBox.classList.remove('hidden');
+
+    const paths = uploadQueue.map(item => item.path);
+
+    // Start progress polling as safety fallback
+    uploadProgressInterval = setInterval(async () => {
+        try {
+            const p = await callApi('file_get_upload_progress');
+            if (p && p.active) {
+                updateUploadProgressUI(p);
+            }
+        } catch (e) {}
+    }, 400);
+
+    try {
+        const res = await callApi('file_upload_batch', paths, currentRemotePath || '/home');
+        if (uploadProgressInterval) clearInterval(uploadProgressInterval);
+
+        if (res && res.success) {
+            showToast(res.message || "کلیه آیتم‌ها با موفقیت آپلود شدند", "success");
+            uploadQueue = [];
+            renderUploadQueue();
+            await refreshFileManager();
+            setTimeout(() => {
+                closeModal('modal-upload-hub');
+                if (progressBox) progressBox.classList.add('hidden');
+            }, 1200);
+        } else if (res && res.cancelled) {
+            showToast(res.message || "آپلود لغو شد", "info");
+        } else {
+            showToast("خطا در آپلود: " + (res ? res.error : "ناشناخته"), "error");
+        }
+    } catch (e) {
+        showToast("خطا در اجرای فرآیند آپلود: " + e.message, "error");
+    } finally {
+        if (uploadProgressInterval) clearInterval(uploadProgressInterval);
+        isUploading = false;
+        if (startBtn) {
+            startBtn.disabled = false;
+            startBtn.innerHTML = '<span>🚀</span> شروع آپلود به لینوکس';
+        }
+        if (cancelBtn) cancelBtn.classList.add('hidden');
+        if (addFilesBtn) addFilesBtn.disabled = false;
+        if (addFolderBtn) addFolderBtn.disabled = false;
+        if (clearBtn) clearBtn.disabled = false;
+        renderUploadQueue();
+    }
+}
+
+async function cancelUploadOperation() {
+    if (!isUploading) return;
+    showToast("در حال لغو عملیات آپلود...", "info");
+    await callApi('file_cancel_upload');
+}
+
+function triggerUploadFileInteractive() {
+    openUploadHubModal();
 }
 
 async function downloadRemoteFile(remotePath) {
@@ -4470,6 +4763,18 @@ function mockApiResponse(method, args) {
     if (method === 'get_connection_info') return { connected: false };
     if (method === 'test_connection_params') return { success: true, latency_ms: 22 };
     if (method === 'file_list') return { success: true, current_path: '/home/aboalfzl', items: [{ name: 'projects', is_dir: true, size: 0, size_formatted: '-', mtime: 1700000000, mtime_formatted: '2026-10-12 12:00', permissions: '755' }] };
+    if (method === 'file_pick_items') {
+        const isFolder = args && args[0] === 'folder';
+        return {
+            success: true,
+            items: isFolder
+                ? [{ path: 'C:\\Projects\\my_folder', name: 'my_folder', is_dir: true, file_count: 8, size: 1540000, size_formatted: '1.5 MB' }]
+                : [{ path: 'C:\\Users\\demo\\archive.zip', name: 'archive.zip', is_dir: false, size: 3145728, size_formatted: '3.0 MB' }]
+        };
+    }
+    if (method === 'file_upload_batch') return { success: true, message: 'کلیه فایل‌ها و پوشه‌ها با موفقیت آپلود شدند' };
+    if (method === 'file_get_upload_progress') return { active: false };
+    if (method === 'file_cancel_upload') return { success: true, message: 'آپلود لغو شد' };
     if (method === 'rdp_check_status') return { connected: true, installed: true, running: true, host: '100.85.120.45', port: 3389, username: 'aboalfzl', local_user_active: false };
     if (method === 'rdp_launch_client') return { success: true, message: 'کلاینت ریموت دسکتاپ ویندوز باز شد' };
     if (method === 'rdp_setup_service') return { success: true, message: 'سرویس xrdp با موفقیت برای میزکار Cinnamon کانفیگ شد' };

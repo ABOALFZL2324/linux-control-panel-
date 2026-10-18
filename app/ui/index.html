@@ -480,9 +480,37 @@
             <button onclick="openDownloadUrlModal()" class="btn btn-primary text-xs px-3.5 py-1.5 shadow-md flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white">
               <span>📥 دانلود از لینک اینترنتی (URL)</span>
             </button>
-            <button onclick="triggerUploadFileInteractive()" class="btn btn-secondary text-xs px-3 py-1.5 shadow-md">
-              ⬆️ آپلود از ویندوز
-            </button>
+            <!-- Multi-Item Windows Upload Menu -->
+            <div class="relative inline-block text-right" id="upload-dropdown-container">
+              <button id="btn-upload-dropdown" onclick="toggleUploadDropdown(event)" class="btn btn-secondary text-xs px-3 py-1.5 shadow-md flex items-center gap-1.5 border-emerald-500/40 text-emerald-300 hover:text-white font-bold transition-all">
+                <span>⬆️ آپلود از ویندوز</span>
+                <span class="text-[9px] opacity-70">▼</span>
+              </button>
+              <div id="upload-dropdown-menu" class="hidden absolute left-0 mt-1.5 w-64 glass-panel bg-[#0d131f]/95 border border-white/10 rounded-xl shadow-2xl p-1.5 z-50 text-xs space-y-1 backdrop-blur-xl">
+                <button type="button" onclick="quickUploadPickFiles()" class="w-full text-right p-2 rounded-lg hover:bg-slate-800 text-slate-200 flex items-center gap-2.5 transition">
+                  <span class="text-base">📄</span>
+                  <div>
+                    <div class="font-bold text-slate-100">انتخاب چند فایل (Multi-File)</div>
+                    <div class="text-[10px] text-slate-400">آپلود چندین فایل همزمان با هم</div>
+                  </div>
+                </button>
+                <button type="button" onclick="quickUploadPickFolder()" class="w-full text-right p-2 rounded-lg hover:bg-slate-800 text-slate-200 flex items-center gap-2.5 transition">
+                  <span class="text-base">📁</span>
+                  <div>
+                    <div class="font-bold text-slate-100">انتخاب پوشه (Folder)</div>
+                    <div class="text-[10px] text-slate-400">آپلود کامل پوشه با تمام زیرشاخه‌ها</div>
+                  </div>
+                </button>
+                <div class="border-t border-white/10 my-1"></div>
+                <button type="button" onclick="openUploadHubModal()" class="w-full text-right p-2 rounded-lg hover:bg-blue-600/20 text-sky-300 flex items-center gap-2.5 transition">
+                  <span class="text-base">📦</span>
+                  <div>
+                    <div class="font-bold text-white">صف آپلود ترکیبی فایل و فولدر</div>
+                    <div class="text-[10px] text-slate-400">مدیریت لیست، افزودن ترکیبی و پیشرفت زنده</div>
+                  </div>
+                </button>
+              </div>
+            </div>
             <button onclick="promptCreateNewItem('folder')" class="btn btn-secondary text-xs px-2.5 py-1.5">
               + پوشه
             </button>
@@ -2234,6 +2262,91 @@
         <button onclick="closeModal('modal-download-url')" class="btn btn-outline text-xs px-4 py-2">انصراف</button>
         <button onclick="executeDownloadUrl()" id="btn-submit-download-url" class="btn btn-primary text-xs px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
           📥 شروع دانلود در لینوکس
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Upload Hub (Multi-file & Multi-folder) -->
+  <div id="modal-upload-hub" class="modal-overlay">
+    <div class="modal-dialog glass-panel w-full max-w-2xl p-6 bg-[#0a0e17]/95 border-white/10 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">⬆️</span>
+          <div>
+            <h3 class="font-bold text-white text-base">مرکز آپلود از ویندوز به لینوکس</h3>
+            <p class="text-[11px] text-slate-400">آپلود همزمان چند فایل، چند پوشه یا ترکیبی از فایل‌ها و پوشه‌ها</p>
+          </div>
+        </div>
+        <button onclick="closeUploadHubModal()" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+
+      <!-- Target Destination Banner -->
+      <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 border border-white/5 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="text-slate-400">مسیر مقصد در سرور لینوکس:</span>
+          <span id="upload-hub-dest" class="font-mono text-emerald-400 font-bold px-2 py-0.5 rounded bg-emerald-500/10">/home</span>
+        </div>
+        <span class="text-[10px] text-slate-500 font-mono">SFTP Direct Streaming</span>
+      </div>
+
+      <!-- Action buttons to add files or folders -->
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="addFilesToUploadQueue()" id="btn-add-files-hub" class="btn btn-secondary text-xs px-3 py-2 flex items-center gap-1.5 font-bold hover:border-blue-500/50">
+            <span>📄</span> + افزودن چند فایل...
+          </button>
+          <button type="button" onclick="addFolderToUploadQueue()" id="btn-add-folder-hub" class="btn btn-secondary text-xs px-3 py-2 flex items-center gap-1.5 font-bold hover:border-amber-500/50">
+            <span>📁</span> + افزودن پوشه...
+          </button>
+        </div>
+        <button type="button" onclick="clearUploadQueue()" id="btn-clear-queue" class="btn btn-outline text-xs px-2.5 py-1.5 text-rose-400 hover:text-rose-300">
+          🗑️ پاک‌سازی صف
+        </button>
+      </div>
+
+      <!-- Selected items table/list -->
+      <div class="rounded-xl border border-white/10 bg-[#050811] overflow-hidden">
+        <div class="p-2.5 bg-slate-800/40 border-b border-white/5 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+          <span>آیتم‌های انتخاب‌شده برای آپلود (<span id="upload-queue-count">0</span> مورد)</span>
+          <span id="upload-queue-total-size" class="text-sky-400">0 B</span>
+        </div>
+        <div id="upload-queue-list" class="max-h-56 overflow-y-auto divide-y divide-white/5 p-1 text-xs">
+          <!-- Populated by JS -->
+          <div id="upload-queue-empty" class="text-center py-8 text-slate-500 text-xs">
+            <span class="text-3xl block mb-2 opacity-40">📂</span>
+            هنوز فایلی یا پوشه‌ای انتخاب نشده است. از دکمه‌های بالا برای انتخاب چند فایل یا پوشه استفاده کنید.
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Upload Progress Bar (hidden until uploading) -->
+      <div id="upload-progress-box" class="hidden space-y-2 p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs">
+        <div class="flex items-center justify-between">
+          <span id="upload-progress-current-file" class="font-mono text-sky-300 font-medium truncate max-w-[70%]">در حال آماده‌سازی...</span>
+          <span id="upload-progress-percent" class="font-mono font-bold text-white">0%</span>
+        </div>
+        <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden">
+          <div id="upload-progress-bar-fill" class="bg-gradient-to-r from-blue-500 to-emerald-400 h-2.5 rounded-full transition-all duration-200" style="width: 0%"></div>
+        </div>
+        <div class="flex items-center justify-between text-[11px] text-slate-400 font-mono">
+          <span id="upload-progress-files-count">فایل ۰ از ۰</span>
+          <span id="upload-progress-bytes">۰ B / ۰ B</span>
+        </div>
+      </div>
+
+      <!-- Footer Actions -->
+      <div class="flex items-center justify-between pt-3 border-t border-white/10">
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="cancelUploadOperation()" id="btn-cancel-upload" class="hidden btn btn-danger text-xs px-4 py-2 font-bold">
+            ⛔ لغو عملیات آپلود
+          </button>
+          <button type="button" onclick="closeUploadHubModal()" id="btn-close-upload-hub" class="btn btn-outline text-xs px-4 py-2">
+            بستن
+          </button>
+        </div>
+        <button type="button" onclick="startBatchUpload()" id="btn-start-upload" class="btn btn-primary text-xs px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-2 shadow-lg disabled:opacity-40 disabled:cursor-not-allowed">
+          <span>🚀</span> شروع آپلود به لینوکس
         </button>
       </div>
     </div>

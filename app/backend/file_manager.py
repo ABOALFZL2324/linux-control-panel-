@@ -159,6 +159,165 @@ class RemoteFileManager:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
+    def upload_batch(self, local_paths, remote_dir, progress_callback=None, cancel_event=None):
+        """Uploads multiple files and/or folders recursively to remote_dir with progress tracking and sudo fallback."""
+        if not self.ssh.is_connected:
+            return {"success": False, "error": "SSH متصل نیست"}
+        sftp = self.ssh.get_sftp()
+        if not sftp:
+            return {"success": False, "error": "ارتباط SFTP در دسترس نیست"}
+
+        clean_remote_dir = os.path.normpath(remote_dir).replace("\\", "/").rstrip("/")
+        if not clean_remote_dir:
+            clean_remote_dir = "/home"
+
+        files_to_transfer = []
+        dirs_to_create = []
+
+        for item_path in local_paths:
+            if not item_path or not os.path.exists(item_path):
+                continue
+            item_path = os.path.abspath(item_path)
+
+            if os.path.isfile(item_path):
+                fname = os.path.basename(item_path)
+                r_file = f"{clean_remote_dir}/{fname}"
+                try:
+                    f_size = os.path.getsize(item_path)
+                except OSError:
+                    f_size = 0
+                files_to_transfer.append((item_path, r_file, f_size, fname))
+            elif os.path.isdir(item_path):
+                folder_name = os.path.basename(item_path.rstrip("\\/"))
+                base_r_dir = f"{clean_remote_dir}/{folder_name}"
+                dirs_to_create.append(base_r_dir)
+
+                for root, dirs, files in os.walk(item_path):
+                    rel = os.path.relpath(root, item_path)
+                    if rel == ".":
+                        current_r_dir = base_r_dir
+                    else:
+                        current_r_dir = f"{base_r_dir}/{rel.replace('\\', '/')}"
+
+                    dirs_to_create.append(current_r_dir)
+                    for d in dirs:
+                        dirs_to_create.append(f"{current_r_dir}/{d}")
+
+                    for f in files:
+                        l_file = os.path.join(root, f)
+                        r_file = f"{current_r_dir}/{f}"
+                        try:
+                            f_size = os.path.getsize(l_file)
+                        except OSError:
+                            f_size = 0
+                        disp_name = f"{folder_name}/{rel}/{f}".replace("\\", "/").replace("/./", "/")
+                        files_to_transfer.append((l_file, r_file, f_size, disp_name))
+
+        if not files_to_transfer and not dirs_to_create:
+            return {"success": False, "error": "هیچ فایل یا پوشه‌ای برای آپلود یافت نشد"}
+
+        created_dirs = set()
+        def _ensure_dir(d_path):
+            norm = os.path.normpath(d_path).replace("\\", "/")
+            if norm in created_dirs:
+                return
+            parts = [p for p in norm.split("/") if p]
+            curr = "/" if norm.startswith("/") else ""
+            for p in parts:
+                curr = (curr + p) if curr.endswith("/") else (curr + "/" + p)
+                if curr not in created_dirs:
+                    try:
+                        sftp.stat(curr)
+                    except (IOError, OSError):
+                        try:
+                            sftp.mkdir(curr)
+                        except Exception as ex:
+                            if "permission denied" in str(ex).lower():
+                                self.ssh.execute_sudo_command(f"mkdir -p '{curr}'")
+                    created_dirs.add(curr)
+
+        # 1. Ensure target base directory exists
+        _ensure_dir(clean_remote_dir)
+
+        # 2. Ensure all folder structures exist
+        for d in dirs_to_create:
+            if cancel_event and cancel_event.is_set():
+                return {"cancelled": True, "message": "عملیات آپلود توسط کاربر لغو شد"}
+            _ensure_dir(d)
+
+        total_files = len(files_to_transfer)
+        total_bytes = sum(item[2] for item in files_to_transfer)
+        completed_bytes = 0
+        successful_count = 0
+        failed_items = []
+
+        for idx, (l_path, r_path, f_size, display_name) in enumerate(files_to_transfer, 1):
+            if cancel_event and cancel_event.is_set():
+                return {
+                    "cancelled": True,
+                    "message": "عملیات توسط کاربر لغو شد",
+                    "successful_files": successful_count,
+                    "total_files": total_files
+                }
+
+            _ensure_dir(os.path.dirname(r_path))
+
+            def _put_cb(transferred, total):
+                if progress_callback:
+                    cur_overall = completed_bytes + transferred
+                    pct = round((cur_overall / total_bytes * 100), 1) if total_bytes > 0 else 100
+                    progress_callback({
+                        "status": "uploading",
+                        "current_file": display_name,
+                        "current_index": idx,
+                        "total_files": total_files,
+                        "bytes_transferred": cur_overall,
+                        "total_bytes": total_bytes,
+                        "percent": pct
+                    })
+
+            try:
+                sftp.put(l_path, r_path, callback=_put_cb)
+                completed_bytes += f_size
+                successful_count += 1
+            except Exception as e:
+                err_msg = str(e)
+                if "permission denied" in err_msg.lower() or "[errno 13]" in err_msg.lower():
+                    try:
+                        tmp_name = f"/tmp/servdock_up_{int(time.time())}_{idx}"
+                        sftp.put(l_path, tmp_name, callback=_put_cb)
+                        q_tmp = shlex.quote(tmp_name)
+                        q_dest = shlex.quote(r_path)
+                        mv_res = self.ssh.execute_sudo_command(f"mv {q_tmp} {q_dest}")
+                        if mv_res.get("success"):
+                            completed_bytes += f_size
+                            successful_count += 1
+                            continue
+                    except Exception as ex_sudo:
+                        err_msg = f"{err_msg} (sudo: {ex_sudo})"
+
+                failed_items.append({"file": display_name, "error": err_msg})
+
+        if progress_callback:
+            progress_callback({
+                "status": "completed",
+                "current_file": "پایان آپلود",
+                "current_index": total_files,
+                "total_files": total_files,
+                "bytes_transferred": completed_bytes,
+                "total_bytes": total_bytes,
+                "percent": 100
+            })
+
+        return {
+            "success": len(failed_items) == 0,
+            "total_files": total_files,
+            "successful_files": successful_count,
+            "failed_files": failed_items,
+            "total_bytes": total_bytes,
+            "message": f"آپلود به پایان رسید: {successful_count} فایل با موفقیت انتقال یافت" + (f" ({len(failed_items)} خطا)" if failed_items else "")
+        }
+
     def download_file(self, remote_path, local_path):
         if not self.ssh.is_connected:
             return {"success": False, "error": "SSH متصل نیست"}

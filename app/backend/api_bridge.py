@@ -1,6 +1,8 @@
 import time
 import webbrowser
 import os
+import threading
+import json
 import webview
 import functools
 import logging
@@ -55,6 +57,8 @@ class ApiBridge:
         self.web_mgr = WebServerManager(self.ssh)
         self.active_server_id = None
         self.window = None
+        self._upload_cancel_event = threading.Event()
+        self.active_upload_progress = {"active": False}
 
     def set_window(self, window):
         self.window = window
@@ -361,10 +365,104 @@ class ApiBridge:
         return self.file_mgr.delete_item(remote_path, is_dir)
 
     def file_upload_interactive(self, remote_dir):
-        local_file = self._pick_local_file()
-        if not local_file:
+        files = self._pick_local_files()
+        if not files:
             return {"cancelled": True}
-        return self.file_mgr.upload_file(local_file, remote_dir)
+        if len(files) == 1 and os.path.isfile(files[0]):
+            return self.file_mgr.upload_file(files[0], remote_dir)
+        return self.file_upload_batch(files, remote_dir)
+
+    def file_pick_items(self, picker_type="files"):
+        """Opens native dialog for selecting multiple files or folders and returns metadata."""
+        if picker_type == "folder":
+            paths = self._pick_local_folders()
+        else:
+            paths = self._pick_local_files()
+
+        if not paths:
+            return {"cancelled": True, "items": []}
+
+        items = []
+        for p in paths:
+            if not p or not os.path.exists(p):
+                continue
+            norm_p = os.path.abspath(p)
+            if os.path.isfile(norm_p):
+                try:
+                    fsize = os.path.getsize(norm_p)
+                except OSError:
+                    fsize = 0
+                items.append({
+                    "path": norm_p,
+                    "name": os.path.basename(norm_p),
+                    "is_dir": False,
+                    "size": fsize,
+                    "size_formatted": self._format_size(fsize)
+                })
+            elif os.path.isdir(norm_p):
+                stats = self._scan_folder_stats(norm_p)
+                items.append({
+                    "path": norm_p,
+                    "name": os.path.basename(norm_p.rstrip("\\/")),
+                    "is_dir": True,
+                    "file_count": stats["file_count"],
+                    "dir_count": stats["dir_count"],
+                    "size": stats["total_size"],
+                    "size_formatted": self._format_size(stats["total_size"])
+                })
+
+        return {"success": True, "items": items}
+
+    def file_upload_batch(self, local_paths, remote_dir):
+        if not self.ssh.is_connected:
+            return {"success": False, "error": "SSH متصل نیست"}
+
+        if not local_paths:
+            return {"success": False, "error": "هیچ فایل یا پوشه‌ای برای آپلود مشخص نشده است"}
+
+        self._upload_cancel_event.clear()
+        self.active_upload_progress = {
+            "active": True,
+            "status": "starting",
+            "current_file": "در حال آماده‌سازی...",
+            "current_index": 0,
+            "total_files": 0,
+            "bytes_transferred": 0,
+            "total_bytes": 0,
+            "percent": 0
+        }
+
+        def on_progress(p_dict):
+            self.active_upload_progress.update(p_dict)
+            self.active_upload_progress["active"] = True
+            if self.window:
+                try:
+                    p_json = json.dumps(self.active_upload_progress)
+                    self.window.evaluate_js(f"window.onUploadProgress && window.onUploadProgress({p_json});")
+                except Exception:
+                    pass
+
+        try:
+            res = self.file_mgr.upload_batch(
+                local_paths,
+                remote_dir,
+                progress_callback=on_progress,
+                cancel_event=self._upload_cancel_event
+            )
+            self.active_upload_progress["active"] = False
+            self.active_upload_progress["completed"] = True
+            return res
+        except Exception as e:
+            self.active_upload_progress["active"] = False
+            return {"success": False, "error": str(e)}
+
+    def file_get_upload_progress(self):
+        return self.active_upload_progress
+
+    def file_cancel_upload(self):
+        self._upload_cancel_event.set()
+        self.active_upload_progress["active"] = False
+        return {"success": True, "message": "درخواست لغو آپلود ثبت شد"}
 
     def file_download_interactive(self, remote_path):
         filename = os.path.basename(remote_path)
@@ -376,25 +474,79 @@ class ApiBridge:
     def file_download_from_url(self, file_url, target_dir=None, filename=None):
         return self.file_mgr.download_from_url(file_url, target_dir, filename)
 
-    def _pick_local_file(self):
+    def _format_size(self, size_bytes):
+        if size_bytes < 1024:
+            return f"{size_bytes} B"
+        elif size_bytes < 1024 * 1024:
+            return f"{size_bytes / 1024:.1f} KB"
+        elif size_bytes < 1024 * 1024 * 1024:
+            return f"{size_bytes / (1024 * 1024):.1f} MB"
+        else:
+            return f"{size_bytes / (1024 * 1024 * 1024):.2f} GB"
+
+    def _scan_folder_stats(self, folder_path):
+        f_count = 0
+        d_count = 0
+        t_size = 0
         try:
-            if self.window:
-                res = self.window.create_file_dialog(webview.OPEN_DIALOG)
-                if res and len(res) > 0:
-                    return res[0]
+            for root, dirs, files in os.walk(folder_path):
+                d_count += len(dirs)
+                f_count += len(files)
+                for f in files:
+                    fp = os.path.join(root, f)
+                    try:
+                        t_size += os.path.getsize(fp)
+                    except OSError:
+                        pass
         except Exception:
             pass
+        return {"file_count": f_count, "dir_count": d_count, "total_size": t_size}
+
+    def _pick_local_file(self):
+        files = self._pick_local_files()
+        return files[0] if files else None
+
+    def _pick_local_files(self):
+        try:
+            if self.window:
+                res = self.window.create_file_dialog(webview.FileDialog.OPEN, allow_multiple=True)
+                if res:
+                    return list(res)
+        except Exception as e:
+            logger.warning(f"Error in webview file dialog: {e}")
         try:
             import tkinter as tk
             from tkinter import filedialog
             root = tk.Tk()
             root.withdraw()
             root.attributes('-topmost', True)
-            path = filedialog.askopenfilename()
+            paths = filedialog.askopenfilenames()
             root.destroy()
-            return path if path else None
-        except Exception:
-            return None
+            return list(paths) if paths else []
+        except Exception as ex:
+            logger.warning(f"Error in tkinter file dialog: {ex}")
+            return []
+
+    def _pick_local_folders(self):
+        try:
+            if self.window:
+                res = self.window.create_file_dialog(webview.FileDialog.FOLDER, allow_multiple=True)
+                if res:
+                    return list(res)
+        except Exception as e:
+            logger.warning(f"Error in webview folder dialog: {e}")
+        try:
+            import tkinter as tk
+            from tkinter import filedialog
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes('-topmost', True)
+            path = filedialog.askdirectory()
+            root.destroy()
+            return [path] if path else []
+        except Exception as ex:
+            logger.warning(f"Error in tkinter folder dialog: {ex}")
+            return []
 
     def _pick_save_path(self, default_name):
         try:
